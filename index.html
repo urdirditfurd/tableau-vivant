@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tableau vivant</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .step { display: none; }
+    .step.is-on { display: block; }
+    #bootError {
+      display: none;
+      margin: 16px 22px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: #3a221e;
+      color: #ffd7d0;
+      max-width: 1180px;
+    }
+    #bootError.show { display: block; }
+  </style>
+</head>
+<body>
+  <div id="bootError" role="alert"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <p class="eyebrow">Studio d'ambiance</p>
+      <h1>Tableau vivant</h1>
+    </div>
+    <p class="lede">Décrivez la scène. Le feu, la lune, la brume et le reste se placent seuls — vous n'avez plus qu'à les ajuster.</p>
+  </header>
+
+  <nav class="progress" aria-label="Étapes">
+    <button type="button" class="progress-step current" data-step="1">
+      <span class="progress-index">1</span>
+      <span>Image et texte</span>
+    </button>
+    <button type="button" class="progress-step" data-step="2">
+      <span class="progress-index">2</span>
+      <span>Éditeur</span>
+    </button>
+    <button type="button" class="progress-step" data-step="3">
+      <span class="progress-index">3</span>
+      <span>Export</span>
+    </button>
+  </nav>
+
+  <main>
+    <section id="step1" class="step is-on">
+      <div class="panel">
+        <h2>Image de fond</h2>
+        <div id="dropZone" class="drop-zone">
+          <input id="imageUpload" type="file" accept="image/*" aria-label="Choisir une image de fond">
+          <div class="drop-copy">
+            <strong>Déposez une image</strong>
+            <span>ou cliquez pour parcourir — JPG, PNG, WebP. Rien n'est envoyé sur un serveur.</span>
+          </div>
+          <img id="uploadPreview" alt="Aperçu de l'image choisie" hidden>
+        </div>
+        <p id="imageFileName" class="hint" hidden></p>
+      </div>
+
+      <div class="panel">
+        <h2>Description</h2>
+        <label class="field-label" for="description">Ce que l'on doit voir bouger</label>
+        <textarea id="description" rows="6" placeholder="Une cabane avec un feu de cheminée, des bougies sur la table, de la vapeur qui s'élève, et une fenêtre avec la lune."></textarea>
+        <p class="hint">Mots reconnus : feu, bougie, lanterne, fumée, vapeur, brume, fenêtre, lune, étoile, eau, lac, mer, arbre, forêt, poussière. Ajoutez « à gauche », « à droite », « en haut » ou « en bas » pour placer un élément.</p>
+        <div class="examples" aria-label="Exemples de descriptions">
+          <button type="button" class="example-btn" data-example="Cabane lofi avec feu de cheminée, bougies, vapeur de tasse">Cabane lofi avec feu de cheminée, bougies, vapeur de tasse</button>
+          <button type="button" class="example-btn" data-example="Paysage nocturne avec étoiles scintillantes et lune">Paysage nocturne avec étoiles scintillantes et lune</button>
+          <button type="button" class="example-btn" data-example="Forêt avec arbres qui bougent et brume">Forêt avec arbres qui bougent et brume</button>
+        </div>
+        <button type="button" id="analyzeButton" class="btn btn-primary">Analyser et créer l'animation</button>
+      </div>
+    </section>
+
+    <section id="step2" class="step">
+      <div class="editor-layout">
+        <div class="stage-column">
+          <div id="stageWrap" class="stage-wrap">
+            <div id="stage" class="stage">
+              <img id="backgroundImage" alt="Image de fond" hidden>
+              <canvas id="editorCanvas" aria-label="Scène animée"></canvas>
+            </div>
+          </div>
+          <div class="stage-tools">
+            <label class="check"><input id="toggleZones" type="checkbox" checked> Afficher les zones</label>
+            <p class="hint">Glissez une zone pour la déplacer. Les carrés aux coins la redimensionnent. Suppr retire l'élément sélectionné.</p>
+          </div>
+        </div>
+
+        <aside class="side-panel">
+          <section class="panel">
+            <h2>Éléments</h2>
+            <div id="elementList" class="element-list"></div>
+            <p class="field-label">Ajouter</p>
+            <div id="addGrid" class="add-grid">
+              <button type="button" data-add="fire">Feu</button>
+              <button type="button" data-add="candle">Bougie</button>
+              <button type="button" data-add="smoke">Fumee</button>
+              <button type="button" data-add="window_light">Lune</button>
+              <button type="button" data-add="stars">Etoiles</button>
+              <button type="button" data-add="water">Eau</button>
+              <button type="button" data-add="trees">Arbres</button>
+              <button type="button" data-add="dust">Poussiere</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Propriétés</h2>
+            <p id="propertyEmpty" class="muted">Sélectionnez un élément sur l'image ou dans la liste.</p>
+            <div id="propertyPanel"></div>
+          </section>
+
+          <section class="panel" id="ambientPanel">
+            <h2>Lumière ambiante</h2>
+            <label class="check"><input id="ambientEnabled" type="checkbox" checked> Activer le voile coloré</label>
+            <div class="property-row">
+              <label for="ambientColor">Couleur</label>
+              <input id="ambientColor" type="color" value="#FFA500">
+            </div>
+            <div class="property-row">
+              <label for="ambientIntensity">Intensité <output id="ambientIntensityOut">18 %</output></label>
+              <input id="ambientIntensity" type="range" min="0" max="0.55" step="0.01" value="0.18">
+            </div>
+            <div class="property-row">
+              <label for="ambientPulse">Respiration</label>
+              <input id="ambientPulse" type="range" min="0.05" max="1.2" step="0.05" value="0.4">
+            </div>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section id="step3" class="step">
+      <div class="panel">
+        <h2>Prévisualisation</h2>
+        <p class="hint">C'est le fichier tel qu'il s'ouvrira, image comprise, sans dépendance.</p>
+        <div class="preview-frame-wrap">
+          <iframe id="previewFrame" title="Prévisualisation de l'animation"></iframe>
+        </div>
+        <div class="export-actions">
+          <button type="button" id="exportButton" class="btn btn-primary">Télécharger le HTML animé</button>
+          <button type="button" id="copyButton" class="btn btn-ghost">Copier le code</button>
+          <button type="button" id="restartButton" class="btn btn-danger">Recommencer</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bottom-bar">
+    <button type="button" id="prevButton" class="btn btn-ghost" style="display:none">← Précédent</button>
+    <p id="statusLine" class="status-line"></p>
+    <button type="button" id="nextButton" class="btn btn-primary">Analyser →</button>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="text_parser.js"></script>
+  <script src="effects.js"></script>
+  <script src="editor.js"></script>
+  <script src="app.js"></script>
+  <script>
+    window.addEventListener("error", function (event) {
+      var box = document.getElementById("bootError");
+      if (!box) return;
+      box.className = "show";
+      box.textContent = "Erreur : " + (event.message || "script bloqué");
+    });
+    setTimeout(function () {
+      if (window.animationApp) return;
+      var box = document.getElementById("bootError");
+      if (!box) return;
+      box.className = "show";
+      box.textContent = "L'application ne démarre pas. Vérifiez que text_parser.js, effects.js, editor.js, app.js et styles.css sont bien sur GitHub à côté de index.html.";
+    }, 1200);
+  </script>
+</body>
+</html>
