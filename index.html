@@ -4,26 +4,501 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tableau vivant</title>
-  <link rel="stylesheet" href="styles.css">
   <style>
-    .step { display: none; }
-    .step.is-on { display: block; }
-    #bootError {
-      display: none;
-      margin: 16px 22px;
-      padding: 14px 16px;
-      border-radius: 12px;
-      background: #3a221e;
-      color: #ffd7d0;
-      max-width: 1180px;
-    }
-    #bootError.show { display: block; }
+/* Tableau vivant — interface d'atelier, tons bois et braise. */
+
+:root {
+  --bg: #141210;
+  --bg-elev: #1e1a16;
+  --bg-elev-2: #2a241d;
+  --line: rgba(243, 228, 206, 0.14);
+  --text: #f6f0e6;
+  --muted: #b6aa9b;
+  --accent: #e39a45;
+  --accent-deep: #b8742e;
+  --ink: #1a120c;
+  --danger: #e07a68;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  --sans: "Segoe UI", system-ui, sans-serif;
+  --serif: Palatino, "Palatino Linotype", "Iowan Old Style", Georgia, serif;
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  color: var(--text);
+  font-family: var(--sans);
+  background:
+    radial-gradient(900px 420px at 0% -10%, rgba(227, 154, 69, 0.18), transparent 55%),
+    radial-gradient(700px 380px at 100% 0%, rgba(92, 64, 38, 0.45), transparent 50%),
+    var(--bg);
+  padding-bottom: 88px;
+}
+
+button, input, textarea, select { font: inherit; color: inherit; }
+
+button { cursor: pointer; }
+
+h1, h2, .eyebrow {
+  font-family: var(--serif);
+  font-weight: 600;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  margin: 0 0 14px;
+  font-size: 1.25rem;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: end;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 22px 8px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--accent);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.lede {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.progress {
+  max-width: 1180px;
+  margin: 18px auto 8px;
+  padding: 0 22px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--muted);
+}
+
+.progress-step.current,
+.progress-step.active {
+  color: var(--text);
+  border-color: rgba(227, 154, 69, 0.55);
+  background: rgba(227, 154, 69, 0.08);
+}
+
+.progress-index {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--bg-elev-2);
+  font-size: 0.85rem;
+}
+
+.progress-step.current .progress-index {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 12px 22px 24px;
+}
+
+.step { display: none !important; }
+.step.is-on { display: block !important; }
+
+.panel {
+  background: rgba(30, 26, 22, 0.92);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+
+.drop-zone {
+  position: relative;
+  min-height: 180px;
+  border: 1.5px dashed rgba(227, 154, 69, 0.55);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 18px;
+  background: rgba(255, 244, 230, 0.03);
+}
+
+.drop-zone.is-over {
+  background: rgba(227, 154, 69, 0.12);
+  border-color: var(--accent);
+}
+
+.drop-zone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.drop-copy {
+  display: grid;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.drop-copy span,
+.hint,
+.muted,
+.status-line {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.drop-zone.has-image .drop-copy { display: none; }
+
+#uploadPreview {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 10px;
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 140px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #12100e;
+  padding: 12px 14px;
+  line-height: 1.5;
+}
+
+textarea:focus, input:focus, select:focus, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.example-btn,
+.add-grid button,
+.element-actions button {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.example-btn:hover,
+.add-grid button:hover,
+.element-actions button:hover,
+.progress-step:hover {
+  border-color: rgba(227, 154, 69, 0.7);
+}
+
+.btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, #f0b56a, var(--accent-deep));
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.btn-danger {
+  background: transparent;
+  color: #ffd0c8;
+  border: 1px solid rgba(224, 122, 104, 0.55);
+  margin-top: 8px;
+  width: 100%;
+}
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.stage-wrap {
+  min-height: 240px;
+}
+
+.stage {
+  position: relative;
+  margin: 0 auto;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  line-height: 0;
+  box-shadow: var(--shadow);
+}
+
+#backgroundImage {
+  display: none;
+}
+
+#editorCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.stage-tools {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.stage-tools .hint { margin: 0; font-size: 0.88rem; }
+
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.side-panel .panel { margin-bottom: 12px; }
+
+.element-list { display: grid; gap: 6px; margin-bottom: 12px; }
+
+.element-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 4px 4px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.element-item.is-selected {
+  outline: 1px solid var(--accent);
+  background: rgba(227, 154, 69, 0.1);
+}
+
+.element-item.is-off { opacity: 0.45; }
+
+.element-name {
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  text-align: left;
+}
+
+.element-actions { display: flex; gap: 4px; }
+
+.element-actions button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.add-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.add-grid button { padding: 6px 10px; font-size: 0.92rem; }
+
+#propertyPanel { display: none; }
+
+.property-title { margin: 0 0 10px; font-weight: 650; }
+
+.property-row {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.property-row label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.property-row input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+.property-row input[type="color"] {
+  width: 100%;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.property-row select {
+  width: 100%;
+  background: #12100e;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.preview-frame-wrap {
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+#previewFrame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+  display: block;
+}
+
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  background: rgba(20, 18, 16, 0.92);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+
+.status-line { margin: 0; flex: 1; text-align: center; }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 78px;
+  transform: translateX(-50%) translateY(8px);
+  background: #f6f0e6;
+  color: var(--ink);
+  padding: 10px 14px;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  max-width: min(560px, calc(100% - 32px));
+  z-index: 5;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast.error { background: #3a221e; color: #ffd7d0; }
+
+.noscript {
+  max-width: 700px;
+  margin: 20px auto;
+  padding: 0 22px;
+}
+
+@media (max-width: 900px) {
+  .topbar, .stage-tools { flex-direction: column; align-items: stretch; }
+  .editor-layout { grid-template-columns: 1fr; }
+  .lede { max-width: none; }
+  body { padding-bottom: 112px; }
+  .bottom-bar { flex-wrap: wrap; }
+  .status-line { order: -1; flex: 1 0 100%; text-align: center; }
+  .bottom-bar .btn { flex: 1; }
+  .progress-step span:last-child { display: none; }
+}
+
+.step { display: none !important; }
+.step.is-on { display: block !important; }
+#bootError {
+  display: none;
+  margin: 16px 22px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #3a221e;
+  color: #ffd7d0;
+  max-width: 1180px;
+}
+#bootError.show { display: block; }
   </style>
 </head>
 <body>
   <div id="bootError" role="alert"></div>
-
-  <header class="topbar">
+<header class="topbar">
     <div class="brand">
       <p class="eyebrow">Studio d'ambiance</p>
       <h1>Tableau vivant</h1>
@@ -156,25 +631,2799 @@
   </footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <script src="text_parser.js"></script>
-  <script src="effects.js"></script>
-  <script src="editor.js"></script>
-  <script src="app.js"></script>
+  <noscript><p class="noscript">Activez JavaScript.</p></noscript>
   <script>
-    window.addEventListener("error", function (event) {
-      var box = document.getElementById("bootError");
+/**
+ * Analyse une description en langage naturel et propose des éléments animés.
+ * Les positions sont des fractions de l'image (0 = bord gauche/haut, 1 = bord opposé).
+ */
+(function (root) {
+  "use strict";
+
+  class TextParser {
+    constructor() {
+      this._seq = 0;
+
+      this.keywords = {
+        fire: ["feu", "feux", "flamme", "flammes", "cheminée", "cheminées", "foyer", "fire", "flame", "fireplace"],
+        candle: ["lanterne", "lanternes", "lantern", "lanterns", "bougie", "bougies", "chandelle", "chandelles", "candle", "candles", "lumière douce"],
+        smoke: ["fumée", "fumées", "vapeur", "brume", "brouillard", "smoke", "steam", "mist", "fog"],
+        window_light: ["fenêtre", "fenêtres", "window", "lune", "moon", "lumière extérieure", "clair de lune"],
+        stars: ["étoile", "étoiles", "star", "stars", "ciel étoilé", "starry sky", "starry"],
+        water: ["eau", "water", "rivière", "river", "lac", "lake", "mer", "sea", "océan", "ocean", "ruisseau"],
+        trees: ["arbre", "arbres", "tree", "trees", "forêt", "forêts", "forest", "feuillage", "leaves"],
+        dust: ["poussière", "dust", "particule", "particules", "particles"]
+      };
+
+      this.defaultPositions = {
+        fire: { x: "center", y: "bottom", width: 0.06, height: 0.14 },
+        candle: { x: "center", y: "center", radius: 0.04 },
+        smoke: { x: "center", y: "top", direction: "up" },
+        window_light: { x: "right", y: "top", width: 0.1, height: 0.23 },
+        stars: { region: { x: 0, y: 0, width: 1, height: 0.2 } },
+        water: { x: "center", y: "bottom", width: 1, height: 0.2 },
+        trees: { region: { x: 0, y: 0.2, width: 1, height: 0.6 } },
+        dust: { region: { x: 0.2, y: 0.3, width: 0.6, height: 0.4 } }
+      };
+    }
+
+    /**
+     * Retourne la liste des éléments à créer.
+     * Un type n'apparaît qu'une fois, sauf les bougies (plusieurs si le texte est au pluriel).
+     */
+    parseDescription(text) {
+      const elements = [];
+      const source = String(text || "");
+      const lowerText = source.toLowerCase();
+      const hints = this._hintsByType(lowerText);
+
+      Object.keys(this.keywords).forEach((type) => {
+        const hasKeyword = this.keywords[type].some((keyword) => this._matches(lowerText, keyword));
+        if (!hasKeyword) return;
+
+        if (type === "candle") {
+          this._pushCandles(source, elements, hints.candle || {});
+          return;
+        }
+
+        const element = this.createElement(type, source, hints[type] || {});
+        if (element) elements.push(element);
+      });
+
+      return elements;
+    }
+
+    createElement(type, description, hint) {
+      const baseElement = {
+        id: `${type}_${Date.now().toString(36)}_${++this._seq}`,
+        type: type,
+        enabled: true
+      };
+
+      let element = null;
+
+      switch (type) {
+        case "fire":
+          element = {
+            ...baseElement,
+            position: { x: 0.25, y: 0.6 },
+            size: { width: 0.08, height: 0.18 },
+            intensity: 0.8,
+            colors: ["#FF6B00", "#FFA500", "#FFD700"],
+            particle_count: 50,
+            blend_mode: "screen"
+          };
+          break;
+        case "candle":
+          element = {
+            ...baseElement,
+            position: { x: 0.48, y: 0.62 },
+            radius: 0.06,
+            color: "#FFD700",
+            flicker_speed: 2.0,
+            blend_mode: "screen"
+          };
+          break;
+        case "smoke":
+          element = {
+            ...baseElement,
+            position: { x: 0.28, y: 0.22 },
+            size: { width: 0.16, height: 0.42 },
+            direction: "up",
+            speed: 0.5,
+            count: 16,
+            color: "#D9D3C7",
+            opacity: 0.32,
+            blend_mode: "normal"
+          };
+          break;
+        case "window_light":
+          element = {
+            ...baseElement,
+            position: { x: 0.68, y: 0.08 },
+            size: { width: 0.22, height: 0.42 },
+            color: "#87CEEB",
+            shimmer_intensity: 0.28,
+            blend_mode: "overlay"
+          };
+          break;
+        case "stars":
+          element = {
+            ...baseElement,
+            region: { x: 0.04, y: 0.03, width: 0.92, height: 0.28 },
+            count: 32,
+            twinkle_speed: 1.5,
+            color: "#FFFFFF"
+          };
+          break;
+        case "water":
+          element = {
+            ...baseElement,
+            position: { x: 0, y: 0.78 },
+            size: { width: 1, height: 0.22 },
+            wave_amplitude: 6,
+            wave_frequency: 0.02,
+            color: "#4682B4",
+            blend_mode: "overlay"
+          };
+          break;
+        case "trees":
+          element = {
+            ...baseElement,
+            region: { x: 0, y: 0.18, width: 1, height: 0.62 },
+            sway_amount: 5,
+            sway_speed: 0.45,
+            blend_mode: "normal"
+          };
+          break;
+        case "dust":
+          element = {
+            ...baseElement,
+            region: { x: 0.12, y: 0.18, width: 0.76, height: 0.55 },
+            count: 18,
+            speed: 0.15,
+            color: "#FFD700",
+            opacity: 0.28
+          };
+          break;
+        default:
+          return null;
+      }
+
+      const applied = hint || (description ? (this._hintsByType(description)[type] || {}) : {});
+      return this._applyHint(element, applied);
+    }
+
+    /**
+     * Repère les mots de placement dans un extrait de phrase.
+     * Les deux axes peuvent être présents (« en haut à gauche »).
+     */
+    analyzePosition(description) {
+      const lowerDesc = String(description || "").toLowerCase();
+      const pos = {};
+
+      if (/(^|[^a-zà-ÿ])gauche([^a-zà-ÿ]|$)|left/.test(lowerDesc)) pos.x = 0.22;
+      else if (/(^|[^a-zà-ÿ])droite([^a-zà-ÿ]|$)|right/.test(lowerDesc)) pos.x = 0.78;
+      else if (/centre|center|milieu/.test(lowerDesc)) pos.x = 0.5;
+
+      if (/(^|[^a-zà-ÿ])haut([^a-zà-ÿ]|$)|top|dessus/.test(lowerDesc)) pos.y = 0.12;
+      else if (/(^|[^a-zà-ÿ])bas([^a-zà-ÿ]|$)|bottom|dessous/.test(lowerDesc)) pos.y = 0.72;
+
+      return pos;
+    }
+
+    _pushCandles(text, elements, hint) {
+      const count = this._candleCount(text);
+      const place = hint || {};
+      const cx = place.x != null ? place.x : 0.5;
+      const cy = place.y != null ? place.y : 0.62;
+      const span = Math.min(0.34, 0.07 * Math.max(1, count));
+
+      for (let i = 0; i < count; i++) {
+        const el = this.createElement("candle", "", {});
+        const t = count === 1 ? 0.5 : i / (count - 1);
+        el.position.x = clamp01(cx + (t - 0.5) * span);
+        el.position.y = clamp01(cy + (i % 2) * 0.045);
+        el.radius = 0.03 + (i % 3) * 0.008;
+        el.flicker_speed = 1.35 + (i % 4) * 0.38;
+        el.color = ["#FFD700", "#FFB347", "#FFE7A3", "#FFCC66"][i % 4];
+        elements.push(el);
+      }
+    }
+
+    _candleCount(text) {
+      const lower = text.toLowerCase();
+      if (!/bougies|chandelles|candles|lanternes|lanterns/.test(lower)) return 1;
+      const m = lower.match(/(\d+|deux|trois|quatre|cinq|quelques)\s+(bougies|chandelles|candles|lanternes|lanterns)/);
+      if (!m) return 3;
+      const words = { deux: 2, trois: 3, quatre: 4, cinq: 5, quelques: 3 };
+      const n = words[m[1]] || parseInt(m[1], 10);
+      if (!Number.isFinite(n)) return 3;
+      return Math.max(1, Math.min(6, n));
+    }
+
+    _windowAround(text, type) {
+      const lower = String(text || "").toLowerCase();
+      const words = this.keywords[type] || [];
+      let idx = -1;
+      let found = "";
+      words.forEach((keyword) => {
+        const i = lower.indexOf(keyword);
+        if (i !== -1 && (idx === -1 || i < idx)) {
+          idx = i;
+          found = keyword;
+        }
+      });
+      if (idx === -1) return lower;
+      const start = Math.max(0, idx - 80);
+      const end = Math.min(lower.length, idx + found.length + 80);
+      return lower.slice(start, end);
+    }
+
+    /**
+     * Chaque mot de place est rattaché à l'objet le plus proche
+     * (« lac à droite » ne déplace pas les étoiles).
+     */
+    _hintsByType(text) {
+      const lower = String(text || "").toLowerCase();
+      const anchors = [];
+      Object.keys(this.keywords).forEach((type) => {
+        this.keywords[type].forEach((keyword) => {
+          let from = 0;
+          while (from < lower.length) {
+            const index = lower.indexOf(keyword, from);
+            if (index === -1) break;
+            if (this._matchAt(lower, keyword, index)) {
+              anchors.push({ type, index });
+            }
+            from = index + Math.max(1, keyword.length);
+          }
+        });
+      });
+
+      const words = [
+        { re: /(^|[^a-zà-ÿ])(gauche|left)(?![a-zà-ÿ])/gi, axis: "x", value: 0.22 },
+        { re: /(^|[^a-zà-ÿ])(droite|right)(?![a-zà-ÿ])/gi, axis: "x", value: 0.78 },
+        { re: /(^|[^a-zà-ÿ])(centre|center|milieu)(?![a-zà-ÿ])/gi, axis: "x", value: 0.5 },
+        { re: /(^|[^a-zà-ÿ])(haut|top|dessus)(?![a-zà-ÿ])/gi, axis: "y", value: 0.12 },
+        { re: /(^|[^a-zà-ÿ])(bas|bottom|dessous)(?![a-zà-ÿ])/gi, axis: "y", value: 0.72 }
+      ];
+      const hints = {};
+      words.forEach((word) => {
+        let match = word.re.exec(lower);
+        while (match) {
+          const at = match.index + match[1].length;
+          let best = null;
+          let bestDist = 42;
+          anchors.forEach((anchor) => {
+            const dist = Math.abs(anchor.index - at);
+            if (dist < bestDist) {
+              bestDist = dist;
+              best = anchor;
+            }
+          });
+          if (best) {
+            if (!hints[best.type]) hints[best.type] = {};
+            hints[best.type][word.axis] = word.value;
+          }
+          match = word.re.exec(lower);
+        }
+      });
+      return hints;
+    }
+
+    _matchAt(text, keyword, index) {
+      if (text.substr(index, keyword.length) !== keyword) return false;
+      if (keyword === "feu") {
+        const rest = text.substr(index + 3, 6);
+        if (rest.startsWith("illage") || rest.startsWith("ille")) return false;
+      }
+      const isolated = keyword.length <= 3 || keyword === "star" || keyword === "tree" || keyword === "lake" || keyword === "fire";
+      if (isolated) {
+        const before = index > 0 ? text.charAt(index - 1) : "";
+        const after = text.charAt(index + keyword.length);
+        if (/[a-zà-ÿ]/i.test(before) || /[a-zà-ÿ]/i.test(after)) return false;
+      }
+      return true;
+    }
+
+    _applyHint(element, hint) {
+      if (!element || !hint) return element;
+      if (element.position && hint.x != null && element.size && Number(element.size.width) >= 0.9) {
+        element.size.width = 0.5;
+        element.position.x = hint.x >= 0.6 ? 0.5 : hint.x <= 0.35 ? 0 : 0.25;
+      } else if (element.position && hint.x != null) {
+        const half = element.size ? (Number(element.size.width) || 0) / 2 : 0;
+        element.position.x = clamp01(hint.x - half);
+      }
+      if (element.position && hint.y != null) element.position.y = hint.y;
+
+      if (element.region && hint.x != null && element.region.width > 0.8) {
+        element.region.width = 0.48;
+        element.region.x = hint.x >= 0.6 ? 0.5 : hint.x <= 0.35 ? 0.02 : 0.26;
+      } else if (element.region && hint.x != null) {
+        element.region.x = clamp01(hint.x - element.region.width / 2);
+      }
+      if (element.region && hint.y != null) element.region.y = clamp01(hint.y);
+      return element;
+    }
+
+    /**
+     * « feu » ne doit pas déclencher un foyer quand le mot est « feuillage ».
+     * Les mots très courts sont isolés pour éviter les faux positifs (mer/commerce…).
+     */
+    _matches(text, keyword) {
+      const k = keyword.toLowerCase();
+      if (k === "feu") return /feu(?!illage|illes?)/i.test(text);
+      if (k.length <= 3 || k === "star" || k === "tree" || k === "lake" || k === "fire") {
+        const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp(`(^|[^a-zà-ÿ])${escaped}([^a-zà-ÿ]|$)`, "i").test(text);
+      }
+      return text.includes(k);
+    }
+  }
+
+  function clamp01(v) {
+    return Math.max(0.02, Math.min(0.92, v));
+  }
+
+  root.TextParser = TextParser;
+})(typeof window !== "undefined" ? window : globalThis);
+
+
+/**
+ * Moteur d'effets « tableau vivant ».
+ *
+ * Coordonnées :
+ *   - valeur entre 0 et 1 → fraction du cadre
+ *   - valeur supérieure à 1 → pixels (scènes anciennes)
+ *
+ * Le dessin suppose que la photo a déjà été peinte sur le canvas,
+ * pour que les modes de fusion (screen, overlay, soft-light) agissent sur l'image.
+ *
+ * installLivingEffects est une déclaration de fonction : son code source
+ * peut être recopié tel quel dans le HTML exporté.
+ */
+function installLivingEffects(global) {
+  "use strict";
+
+  function clamp(v, a, b) {
+    return Math.max(a, Math.min(b, v));
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  /** Bruit lisse 1D, assez organique pour un scintillement de flamme. */
+  function smoothNoise(t) {
+    const i = Math.floor(t);
+    const f = t - i;
+    const u = f * f * (3 - 2 * f);
+    const n0 = Math.sin(i * 127.1) * 43758.5453;
+    const n1 = Math.sin((i + 1) * 127.1) * 43758.5453;
+    return lerp(n0 - Math.floor(n0), n1 - Math.floor(n1), u);
+  }
+
+  function applyBlend(ctx, mode) {
+    const map = {
+      normal: "source-over",
+      screen: "screen",
+      overlay: "overlay",
+      lighter: "lighter",
+      multiply: "multiply",
+      soft_light: "soft-light"
+    };
+    ctx.globalCompositeOperation = map[mode] || mode || "source-over";
+  }
+
+  function parseColor(hex, alpha) {
+    const fallback = alpha === undefined ? "rgb(255,255,255)" : `rgba(255,255,255,${alpha})`;
+    if (!hex || typeof hex !== "string") return fallback;
+    if (hex.startsWith("rgb")) {
+      if (alpha === undefined) return hex;
+      const m = hex.match(/[\d.]+/g);
+      if (!m || m.length < 3) return hex;
+      return `rgba(${m[0]},${m[1]},${m[2]},${alpha})`;
+    }
+    const h = hex.replace("#", "");
+    const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+    const n = parseInt(full, 16);
+    if (!Number.isFinite(n)) return fallback;
+    const r = (n >> 16) & 255;
+    const g = (n >> 8) & 255;
+    const b = n & 255;
+    if (alpha === undefined) return `rgb(${r},${g},${b})`;
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  /**
+   * Convertit une coordonnée de scène en pixels du cadre courant.
+   * fallbackFraction est utilisé seulement si la valeur est absente.
+   */
+  function toPx(value, total, fallbackFraction) {
+    const fb = (fallbackFraction == null ? 0 : fallbackFraction) * total;
+    if (value == null || value === "" || Number.isNaN(Number(value))) return fb;
+    const n = Number(value);
+    if (Math.abs(n) <= 1) return n * total;
+    return n;
+  }
+
+  /** Amplitude en pixels, proportionnelle à la taille du cadre. */
+  function scaledAmp(nominal, span) {
+    const n = Number(nominal);
+    if (!Number.isFinite(n)) return span * 0.01;
+    if (Math.abs(n) <= 1) return n * span;
+    return n * (span / 520);
+  }
+
+  function readEnabled(cfg) {
+    return !cfg || cfg.enabled !== false;
+  }
+
+  // --- Lumière ambiante ----------------------------------------------------
+
+  class AmbientLight {
+    constructor(opts) {
+      this.cfg = opts || {};
+      this.t = 0;
+      this.current = this.cfg.intensity ?? 0.25;
+    }
+
+    update(dt) {
+      if (!readEnabled(this.cfg)) return;
+      const speed = Number(this.cfg.pulse_speed ?? this.cfg.pulseSpeed ?? 0.45);
+      this.t += dt * speed * 0.35;
+      const pulse = 0.86 + 0.14 * Math.sin(this.t);
+      this.current = (Number(this.cfg.intensity) || 0) * pulse;
+    }
+
+    draw(ctx, w, h) {
+      if (!readEnabled(this.cfg) || this.current <= 0.001) return;
+      const width = w || ctx.canvas.width;
+      const height = h || ctx.canvas.height;
+      ctx.save();
+      applyBlend(ctx, "soft-light");
+      ctx.fillStyle = parseColor(this.cfg.color || "#FFA500", this.current);
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+    }
+  }
+
+  // --- Feu -----------------------------------------------------------------
+
+  class FireEffect {
+    constructor(opts) {
+      this.cfg = opts || {};
+      this.kind = "fire";
+      this.particles = [];
+      this.ready = false;
+    }
+
+    layout(w, h) {
+      if (!(w > 0) || !(h > 0)) return;
+      const pos = this.cfg.position || {};
+      const size = this.cfg.size || {};
+      this.x = toPx(pos.x, w, 0.3);
+      this.y = toPx(pos.y, h, 0.6);
+      this.w = Math.max(8, toPx(size.width, w, 0.08));
+      this.h = Math.max(8, toPx(size.height, h, 0.16));
+      const count = clamp(Math.round(Number(this.cfg.particle_count) || 50), 1, 240);
+      if (this.particles.length !== count) {
+        this.particles = [];
+        for (let i = 0; i < count; i++) this.particles.push(this._spawn(true));
+      }
+      this.ready = true;
+    }
+
+    _spawn(randomV) {
+      const intensity = Number(this.cfg.intensity ?? 0.8);
+      return {
+        u: 0.5 + (Math.random() - 0.5) * 0.5,
+        v: randomV ? 0.2 + Math.random() * 0.8 : 0.82 + Math.random() * 0.16,
+        vu: (Math.random() - 0.5) * 0.08,
+        vv: -(0.28 + Math.random() * 0.45) * (0.55 + intensity * 0.55),
+        life: 0.5 + Math.random() * 0.9,
+        age: randomV ? Math.random() * 0.7 : 0,
+        size: 0.07 + Math.random() * 0.2
+      };
+    }
+
+    update(dt) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      for (let i = 0; i < this.particles.length; i++) {
+        const p = this.particles[i];
+        p.age += dt;
+        p.u += p.vu * dt;
+        p.v += p.vv * dt;
+        p.vu += (Math.random() - 0.5) * 0.25 * dt;
+        p.vv -= 0.08 * dt;
+        if (p.age >= p.life || p.v < -0.08) this.particles[i] = this._spawn(false);
+      }
+    }
+
+    draw(ctx) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const intensity = clamp(Number(this.cfg.intensity ?? 0.8), 0, 1.5);
+      const colors = Array.isArray(this.cfg.colors) && this.cfg.colors.length
+        ? this.cfg.colors
+        : ["#FF6B00", "#FFA500", "#FFD700"];
+      ctx.save();
+      applyBlend(ctx, this.cfg.blend_mode || "screen");
+
+      const gx = this.x + this.w * 0.5;
+      const gy = this.y + this.h * 0.86;
+      const glow = ctx.createRadialGradient(gx, gy, 2, gx, gy, this.w * 0.85);
+      glow.addColorStop(0, parseColor(colors[0], 0.55 * intensity));
+      glow.addColorStop(0.5, parseColor(colors[1] || colors[0], 0.2 * intensity));
+      glow.addColorStop(1, parseColor(colors[2] || colors[0], 0));
+      ctx.fillStyle = glow;
+      ctx.fillRect(this.x - this.w * 0.3, this.y - this.h * 0.05, this.w * 1.6, this.h * 1.15);
+
+      for (let i = 0; i < this.particles.length; i++) {
+        const p = this.particles[i];
+        const t = p.age / p.life;
+        const alpha = (1 - t) * (0.35 + 0.6 * intensity);
+        const r = Math.max(1.5, p.size * this.w * (1 - t * 0.45));
+        const px = this.x + p.u * this.w;
+        const py = this.y + p.v * this.h;
+        const color = colors[i % colors.length];
+        const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, parseColor("#FFF6D8", alpha * 0.85));
+        g.addColorStop(0.35, parseColor(color, alpha));
+        g.addColorStop(1, parseColor(color, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // --- Bougie --------------------------------------------------------------
+
+  class CandleEffect {
+    constructor(opts) {
+      this.cfg = opts || {};
+      this.kind = "candle";
+      this.t = Math.random() * 40;
+      this.bright = 1;
+      this.ready = false;
+    }
+
+    layout(w, h) {
+      if (!(w > 0) || !(h > 0)) return;
+      const pos = this.cfg.position || {};
+      this.x = toPx(pos.x, w, 0.5);
+      this.y = toPx(pos.y, h, 0.55);
+      const radius = this.cfg.radius == null ? 0.045 : Number(this.cfg.radius);
+      this.radius = Math.abs(radius) <= 1 ? radius * Math.min(w, h) : radius;
+      this.ready = true;
+    }
+
+    update(dt) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const speed = Number(this.cfg.flicker_speed ?? 2);
+      this.t += dt * speed;
+      const n1 = smoothNoise(this.t * 1.7);
+      const n2 = smoothNoise(this.t * 3.1 + 20);
+      this.bright = 0.7 + 0.3 * (0.62 * n1 + 0.38 * n2);
+    }
+
+    draw(ctx) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const color = this.cfg.color || "#FFD700";
+      ctx.save();
+      applyBlend(ctx, this.cfg.blend_mode || "screen");
+      const r = Math.max(4, this.radius * (0.9 + 0.12 * this.bright));
+      const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
+      g.addColorStop(0, parseColor(color, 0.62 * this.bright));
+      g.addColorStop(0.32, parseColor(color, 0.26 * this.bright));
+      g.addColorStop(1, parseColor(color, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      const coreR = r * 0.22;
+      const core = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, coreR);
+      core.addColorStop(0, parseColor("#FFF8E4", 0.9 * this.bright));
+      core.addColorStop(1, parseColor(color, 0));
+      ctx.fillStyle = core;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y - coreR * 0.15, coreR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // --- Fenêtre / lune ------------------------------------------------------
+
+  class WindowLightEffect {
+    constructor(opts) {
+      this.cfg = opts || {};
+      this.kind = "window_light";
+      this.t = Math.random() * 10;
+      this.ready = false;
+    }
+
+    layout(w, h) {
+      if (!(w > 0) || !(h > 0)) return;
+      const pos = this.cfg.position || {};
+      const size = this.cfg.size || {};
+      this.x = toPx(pos.x, w, 0.68);
+      this.y = toPx(pos.y, h, 0.08);
+      this.w = Math.max(8, toPx(size.width, w, 0.2));
+      this.h = Math.max(8, toPx(size.height, h, 0.4));
+      this.ready = true;
+    }
+
+    update(dt) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      this.t += dt * 0.35;
+    }
+
+    draw(ctx) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const color = this.cfg.color || "#87CEEB";
+      const shimmer = Number(this.cfg.shimmer_intensity ?? 0.22);
+      const n = smoothNoise(this.t);
+      const alpha = shimmer * (0.55 + 0.45 * n);
+      ctx.save();
+      applyBlend(ctx, this.cfg.blend_mode || "overlay");
+      const g = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.h);
+      g.addColorStop(0, parseColor(color, alpha * 1.15));
+      g.addColorStop(0.55, parseColor(color, alpha * 0.4));
+      g.addColorStop(1, parseColor(color, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(this.x, this.y, this.w, this.h);
+
+      const mx = this.x + this.w * 0.62;
+      const my = this.y + this.h * 0.2;
+      const moon = ctx.createRadialGradient(mx, my, 2, mx, my, this.w * 0.28);
+      moon.addColorStop(0, parseColor("#F4FBFF", alpha * 0.95));
+      moon.addColorStop(0.4, parseColor("#D7ECFF", alpha * 0.35));
+      moon.addColorStop(1, parseColor("#D7ECFF", 0));
+      ctx.fillStyle = moon;
+      ctx.fillRect(this.x, this.y, this.w, this.h * 0.7);
+      ctx.restore();
+    }
+  }
+
+  // --- Fumée / brume -------------------------------------------------------
+
+  class SmokeEffect {
+    constructor(opts) {
+      this.cfg = opts || {};
+      this.kind = "smoke";
+      this.particles = [];
+      this.ready = false;
+    }
+
+    layout(w, h) {
+      if (!(w > 0) || !(h > 0)) return;
+      const pos = this.cfg.position || {};
+      const size = this.cfg.size || {};
+      this.x = toPx(pos.x, w, 0.3);
+      this.y = toPx(pos.y, h, 0.2);
+      this.bw = Math.max(12, toPx(size.width, w, 0.14));
+      this.bh = Math.max(12, toPx(size.height, h, 0.4));
+      const count = clamp(Math.round(Number(this.cfg.count) || 16), 4, 80);
+      if (this.particles.length !== count) {
+        this.particles = [];
+        for (let i = 0; i < count; i++) this.particles.push(this._spawn(true));
+      }
+      this.ready = true;
+    }
+
+    _spawn(random) {
+      return {
+        u: (Math.random() - 0.5) * 0.35,
+        v: random ? -Math.random() * 0.85 : 0.05,
+        vu: (Math.random() - 0.5) * 0.05,
+        grow: 0.15 + Math.random() * 0.25,
+        life: 3.2 + Math.random() * 3.4,
+        age: random ? Math.random() * 3 : 0,
+        size: 0.12 + Math.random() * 0.2
+      };
+    }
+
+    update(dt) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const speed = Number(this.cfg.speed ?? 0.5);
+      const dir = this.cfg.direction === "down" ? 1 : -1;
+      for (let i = 0; i < this.particles.length; i++) {
+        const p = this.particles[i];
+        p.age += dt;
+        p.u += p.vu * dt * speed;
+        p.v += dir * (0.12 + Math.random() * 0.05) * speed * dt;
+        p.vu += (Math.random() - 0.5) * 0.02 * dt;
+        p.size += p.grow * dt * 0.15;
+        if (p.age >= p.life) this.particles[i] = this._spawn(false);
+      }
+    }
+
+    draw(ctx) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const color = this.cfg.color || "#D9D3C7";
+      const opacity = clamp(Number(this.cfg.opacity ?? 0.3), 0, 1);
+      const originX = this.x + this.bw * 0.5;
+      const originY = this.cfg.direction === "down" ? this.y : this.y + this.bh;
+      ctx.save();
+      applyBlend(ctx, this.cfg.blend_mode || "normal");
+      for (const p of this.particles) {
+        const t = p.age / p.life;
+        const fadeIn = t < 0.15 ? t / 0.15 : 1;
+        const a = opacity * (1 - t) * fadeIn;
+        const px = originX + p.u * this.bw;
+        const py = originY + p.v * this.bh;
+        const r = Math.max(4, p.size * this.bw);
+        const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, parseColor(color, a));
+        g.addColorStop(1, parseColor(color, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // --- Étoiles -------------------------------------------------------------
+
+  class StarsEffect {
+    constructor(opts) {
+      this.cfg = opts || {};
+      this.kind = "stars";
+      this.stars = [];
+      this.t = 0;
+      this.ready = false;
+    }
+
+    layout(w, h) {
+      if (!(w > 0) || !(h > 0)) return;
+      const region = this.cfg.region || { x: 0.05, y: 0.04, width: 0.9, height: 0.24 };
+      this.rx = toPx(region.x, w, 0);
+      this.ry = toPx(region.y, h, 0);
+      this.rw = Math.max(8, toPx(region.width, w, 0.9));
+      this.rh = Math.max(8, toPx(region.height, h, 0.24));
+      const count = clamp(Math.round(Number(this.cfg.count) || 30), 0, 200);
+      if (this.stars.length !== count) {
+        this.stars = [];
+        for (let i = 0; i < count; i++) {
+          this.stars.push({
+            u: Math.random(),
+            v: Math.random(),
+            size: 0.7 + Math.random() * 1.7,
+            phase: Math.random() * Math.PI * 2,
+            speed: 0.35 + Math.random() * 1.1,
+            base: 0.28 + Math.random() * 0.55,
+            cross: Math.random() > 0.55
+          });
+        }
+      }
+      this.ready = true;
+    }
+
+    update(dt) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      this.t += dt * Number(this.cfg.twinkle_speed ?? 1.5);
+    }
+
+    draw(ctx) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const color = this.cfg.color || "#FFFFFF";
+      ctx.save();
+      applyBlend(ctx, "screen");
+      for (const s of this.stars) {
+        const a = s.base * (0.4 + 0.6 * (0.5 + 0.5 * Math.sin(this.t * s.speed + s.phase)));
+        const x = this.rx + s.u * this.rw;
+        const y = this.ry + s.v * this.rh;
+        ctx.fillStyle = parseColor(color, clamp(a, 0, 1));
+        ctx.beginPath();
+        ctx.arc(x, y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+        if (s.cross) {
+          ctx.strokeStyle = parseColor(color, a * 0.55);
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(x - s.size * 2.4, y);
+          ctx.lineTo(x + s.size * 2.4, y);
+          ctx.moveTo(x, y - s.size * 2.4);
+          ctx.lineTo(x, y + s.size * 2.4);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+  }
+
+  // --- Poussière -----------------------------------------------------------
+
+  class DustParticlesEffect {
+    constructor(opts) {
+      this.cfg = opts || {};
+      this.kind = "dust";
+      this.particles = [];
+      this.t = 0;
+      this.ready = false;
+    }
+
+    layout(w, h) {
+      if (!(w > 0) || !(h > 0)) return;
+      const region = this.cfg.region || { x: 0.15, y: 0.2, width: 0.7, height: 0.5 };
+      this.rx = toPx(region.x, w, 0.1);
+      this.ry = toPx(region.y, h, 0.2);
+      this.rw = Math.max(8, toPx(region.width, w, 0.7));
+      this.rh = Math.max(8, toPx(region.height, h, 0.5));
+      const count = clamp(Math.round(Number(this.cfg.count) || 18), 0, 160);
+      if (this.particles.length !== count) {
+        this.particles = [];
+        for (let i = 0; i < count; i++) {
+          this.particles.push({
+            u: Math.random(),
+            v: Math.random(),
+            vu: (Math.random() - 0.5) * 0.35,
+            vv: (Math.random() - 0.5) * 0.22,
+            size: 0.8 + Math.random() * 1.8,
+            phase: Math.random() * Math.PI * 2
+          });
+        }
+      }
+      this.ready = true;
+    }
+
+    update(dt) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const speed = Number(this.cfg.speed ?? 0.15);
+      this.t += dt;
+      const drift = 0.2 + speed;
+      for (const p of this.particles) {
+        // Marche aléatoire lente : le grain traverse la zone en une vingtaine de secondes.
+        p.vu += (Math.random() - 0.5) * dt;
+        p.vv += (Math.random() - 0.5) * dt;
+        p.vu *= 0.995;
+        p.vv *= 0.995;
+        p.u += p.vu * drift * dt + Math.sin(this.t * 0.35 + p.phase) * 0.04 * dt;
+        p.v += p.vv * drift * dt + Math.cos(this.t * 0.28 + p.phase) * 0.03 * dt;
+        if (p.u < 0) p.u += 1;
+        if (p.u > 1) p.u -= 1;
+        if (p.v < 0) p.v += 1;
+        if (p.v > 1) p.v -= 1;
+      }
+    }
+
+    draw(ctx) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const color = this.cfg.color || "#FFD700";
+      const opacity = clamp(Number(this.cfg.opacity ?? 0.28), 0, 1);
+      ctx.save();
+      applyBlend(ctx, "screen");
+      for (const p of this.particles) {
+        const a = opacity * (0.45 + 0.55 * (0.5 + 0.5 * Math.sin(this.t * 0.8 + p.phase)));
+        const x = this.rx + p.u * this.rw;
+        const y = this.ry + p.v * this.rh;
+        ctx.fillStyle = parseColor(color, clamp(a, 0, 1));
+        ctx.beginPath();
+        ctx.arc(x, y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // --- Eau -----------------------------------------------------------------
+
+  class WaterEffect {
+    constructor(opts) {
+      this.cfg = opts || {};
+      this.kind = "water";
+      this.bg = null;
+      this.t = 0;
+      this.ready = false;
+    }
+
+    setBackground(img) {
+      this.bg = img || null;
+    }
+
+    layout(w, h) {
+      if (!(w > 0) || !(h > 0)) return;
+      const pos = this.cfg.position || {};
+      const size = this.cfg.size || {};
+      this.x = toPx(pos.x, w, 0);
+      this.y = toPx(pos.y, h, 0.78);
+      this.bw = Math.max(8, toPx(size.width, w, 1));
+      this.bh = Math.max(8, toPx(size.height, h, 0.22));
+      this.frameW = w;
+      this.frameH = h;
+      this.ready = true;
+    }
+
+    update(dt) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      this.t += dt;
+    }
+
+    draw(ctx) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const amp = scaledAmp(this.cfg.wave_amplitude ?? 6, this.frameH);
+      const freq = Number(this.cfg.wave_frequency ?? 0.02);
+      const color = this.cfg.color || "#4682B4";
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(this.x, this.y, this.bw, this.bh);
+      ctx.clip();
+
+      const img = this.bg;
+      if (img && img.naturalWidth) {
+        ctx.globalCompositeOperation = "source-over";
+        const step = 3;
+        for (let row = 0; row < this.bh; row += step) {
+          const py = this.y + row;
+          const shift = Math.sin(py * freq + this.t * 1.15) * amp
+            + Math.sin(py * freq * 2.1 - this.t * 0.7) * amp * 0.35;
+          const sy = (py / this.frameH) * img.naturalHeight;
+          const sh = Math.max(0.75, (step / this.frameH) * img.naturalHeight);
+          ctx.drawImage(img, 0, sy, img.naturalWidth, sh, this.x + shift, py, this.bw, step + 0.75);
+        }
+      } else {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = parseColor(color, 0.35);
+        ctx.fillRect(this.x, this.y, this.bw, this.bh);
+      }
+
+      applyBlend(ctx, this.cfg.blend_mode || "overlay");
+      const wash = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.bh);
+      wash.addColorStop(0, parseColor(color, 0.05));
+      wash.addColorStop(1, parseColor(color, 0.28));
+      ctx.fillStyle = wash;
+      ctx.fillRect(this.x, this.y, this.bw, this.bh);
+
+      ctx.globalCompositeOperation = "screen";
+      const glide = ((this.t * 28) % (this.bw + 120)) - 60;
+      const shine = ctx.createLinearGradient(this.x + glide, this.y, this.x + glide + 70, this.y);
+      shine.addColorStop(0, "rgba(255,255,255,0)");
+      shine.addColorStop(0.5, "rgba(255,255,255,0.16)");
+      shine.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = shine;
+      ctx.fillRect(this.x, this.y, this.bw, this.bh);
+      ctx.restore();
+    }
+  }
+
+  // --- Arbres / feuillage --------------------------------------------------
+
+  class TreesEffect {
+    constructor(opts) {
+      this.cfg = opts || {};
+      this.kind = "trees";
+      this.bg = null;
+      this.t = 0;
+      this.leaves = [];
+      this.ready = false;
+    }
+
+    setBackground(img) {
+      this.bg = img || null;
+    }
+
+    layout(w, h) {
+      if (!(w > 0) || !(h > 0)) return;
+      const region = this.cfg.region || { x: 0, y: 0.18, width: 1, height: 0.62 };
+      this.rx = toPx(region.x, w, 0);
+      this.ry = toPx(region.y, h, 0.18);
+      this.rw = Math.max(8, toPx(region.width, w, 1));
+      this.rh = Math.max(8, toPx(region.height, h, 0.6));
+      this.frameW = w;
+      this.frameH = h;
+      if (this.leaves.length !== 10) {
+        this.leaves = [];
+        for (let i = 0; i < 10; i++) {
+          this.leaves.push({
+            u: Math.random(),
+            v: Math.random() * 0.7,
+            phase: Math.random() * Math.PI * 2,
+            size: 1.4 + Math.random() * 2.2,
+            tint: Math.random() > 0.5 ? "#C8D6A0" : "#E7D7A1"
+          });
+        }
+      }
+      this.ready = true;
+    }
+
+    update(dt) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      this.t += dt * Number(this.cfg.sway_speed ?? 0.45);
+    }
+
+    draw(ctx) {
+      if (!this.ready || !readEnabled(this.cfg)) return;
+      const amp = scaledAmp(this.cfg.sway_amount ?? 5, this.frameW);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(this.rx, this.ry, this.rw, this.rh);
+      ctx.clip();
+
+      const img = this.bg;
+      if (img && img.naturalWidth) {
+        ctx.globalCompositeOperation = "source-over";
+        const step = 3;
+        for (let row = 0; row < this.rh; row += step) {
+          const py = this.ry + row;
+          const depth = row / this.rh;
+          const sway = Math.sin(this.t * 1.7 + row * 0.02) * amp * (1 - depth * 0.72);
+          const sy = (py / this.frameH) * img.naturalHeight;
+          const sh = Math.max(0.75, (step / this.frameH) * img.naturalHeight);
+          const sx = (this.rx / this.frameW) * img.naturalWidth;
+          const sw = (this.rw / this.frameW) * img.naturalWidth;
+          ctx.drawImage(img, sx, sy, sw, sh, this.rx + sway, py, this.rw, step + 0.75);
+        }
+      }
+
+      ctx.globalCompositeOperation = "screen";
+      for (const leaf of this.leaves) {
+        const x = this.rx + leaf.u * this.rw + Math.sin(this.t * 1.4 + leaf.phase) * amp * 0.8;
+        const y = this.ry + leaf.v * this.rh + ((this.t * 8 + leaf.phase * 10) % (this.rh * 0.5));
+        ctx.fillStyle = parseColor(leaf.tint, 0.28);
+        ctx.beginPath();
+        ctx.ellipse(x, y, leaf.size * 1.6, leaf.size, leaf.phase, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function createEffect(el) {
+    if (!el) return null;
+    switch (el.type) {
+      case "fire":
+        return new FireEffect(el);
+      case "candle":
+        return new CandleEffect(el);
+      case "window_light":
+        return new WindowLightEffect(el);
+      case "smoke":
+        return new SmokeEffect(el);
+      case "stars":
+        return new StarsEffect(el);
+      case "dust":
+        return new DustParticlesEffect(el);
+      case "water":
+        return new WaterEffect(el);
+      case "trees":
+        return new TreesEffect(el);
+      default:
+        console.warn("Type d'effet inconnu :", el.type);
+        return null;
+    }
+  }
+
+  class ScenePlayer {
+    constructor(canvas, scene, backgroundImage) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext("2d");
+      this.scene = scene || {};
+      this.bg = backgroundImage || null;
+      this.effects = [];
+      this.ambient = null;
+      this.running = false;
+      this.last = 0;
+      this.viewWidth = canvas.width;
+      this.viewHeight = canvas.height;
+      this._build();
+    }
+
+    _build() {
+      const s = this.scene;
+      if (s.coords !== "relative" && s.canvas_size && s.canvas_size.width) {
+        this.canvas.width = s.canvas_size.width;
+        this.canvas.height = s.canvas_size.height;
+      }
+      this.viewWidth = this.canvas.width || s.canvas_size?.width || 1280;
+      this.viewHeight = this.canvas.height || s.canvas_size?.height || 720;
+      if (!this.canvas.width) {
+        this.canvas.width = this.viewWidth;
+        this.canvas.height = this.viewHeight;
+      }
+
+      this.ambient = s.ambient_light ? new AmbientLight(s.ambient_light) : null;
+      this.effects = [];
+      const list = s.animated_elements || s.elements || [];
+      list.forEach((el) => {
+        if (el.enabled === false) return;
+        const fx = createEffect(el);
+        if (!fx) return;
+        if (fx.layout) fx.layout(this.viewWidth, this.viewHeight);
+        if (fx.setBackground && this.bg) fx.setBackground(this.bg);
+        this.effects.push(fx);
+      });
+    }
+
+    resize(w, h) {
+      if (!(w > 0) || !(h > 0)) return;
+      this.viewWidth = w;
+      this.viewHeight = h;
+      if (this.canvas.width !== w || this.canvas.height !== h) {
+        this.canvas.width = w;
+        this.canvas.height = h;
+      }
+      this.effects.forEach((fx) => {
+        if (fx.layout) fx.layout(w, h);
+        if (fx.setBackground && this.bg) fx.setBackground(this.bg);
+      });
+    }
+
+    start() {
+      if (this.running) return;
+      this.running = true;
+      this.last = performance.now();
+      const loop = (now) => {
+        if (!this.running) return;
+        const dt = Math.min(0.05, (now - this.last) / 1000);
+        this.last = now;
+        this.update(dt);
+        this.draw();
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    }
+
+    stop() {
+      this.running = false;
+    }
+
+    update(dt) {
+      if (this.ambient) this.ambient.update(dt);
+      this.effects.forEach((fx) => fx.update(dt));
+    }
+
+    draw() {
+      const ctx = this.ctx;
+      const w = this.viewWidth;
+      const h = this.viewHeight;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.globalCompositeOperation = "source-over";
+      if (this.bg && this.bg.naturalWidth) {
+        ctx.drawImage(this.bg, 0, 0, w, h);
+      }
+      this.effects.forEach((fx) => {
+        try {
+          fx.draw(ctx, w, h);
+        } catch (err) {
+          console.error(err);
+        }
+      });
+      if (this.ambient) this.ambient.draw(ctx, w, h);
+    }
+  }
+
+  global.LivingEffects = {
+    FireEffect,
+    CandleEffect,
+    WindowLightEffect,
+    SmokeEffect,
+    StarsEffect,
+    DustParticlesEffect,
+    WaterEffect,
+    TreesEffect,
+    AmbientLight,
+    ScenePlayer,
+    createEffect,
+    parseColor,
+    applyBlend
+  };
+}
+
+installLivingEffects(typeof window !== "undefined" ? window : globalThis);
+
+
+/**
+ * Éditeur visuel : zones, déplacement, redimensionnement.
+ * L'animation tourne sur le même canvas, par-dessus la photo.
+ */
+(function (root) {
+  "use strict";
+
+  const TYPE_META = {
+    fire: { icon: "🔥", label: "Feu" },
+    candle: { icon: "🕯️", label: "Bougie" },
+    smoke: { icon: "💨", label: "Fumée" },
+    window_light: { icon: "🌙", label: "Fenêtre / lune" },
+    stars: { icon: "✨", label: "Étoiles" },
+    water: { icon: "🌊", label: "Eau" },
+    trees: { icon: "🌲", label: "Arbres" },
+    dust: { icon: "✴️", label: "Poussière" }
+  };
+
+  function toPx(value, total) {
+    if (value == null || Number.isNaN(Number(value))) return 0;
+    const n = Number(value);
+    return Math.abs(n) <= 1 ? n * total : n;
+  }
+
+  class VisualElement {
+    constructor(config, canvas) {
+      this.config = config;
+      this.canvas = canvas;
+      this.editor = null;
+    }
+
+    space() {
+      if (this.editor && this.editor.viewWidth) {
+        return { w: this.editor.viewWidth, h: this.editor.viewHeight };
+      }
+      return { w: this.canvas.width || 1, h: this.canvas.height || 1 };
+    }
+
+    /** Rectangle en pixels d'affichage (pas les pixels retina du bitmap). */
+    getBounds() {
+      const { w, h } = this.space();
+      const c = this.config;
+
+      if (c.type === "candle") {
+        const radius = c.radius == null ? 0.045 : Number(c.radius);
+        const r = Math.abs(radius) <= 1 ? radius * Math.min(w, h) : radius;
+        const cx = toPx(c.position?.x ?? 0.5, w);
+        const cy = toPx(c.position?.y ?? 0.5, h);
+        return { x: cx - r, y: cy - r, width: r * 2, height: r * 2 };
+      }
+
+      if (c.region) {
+        return {
+          x: toPx(c.region.x, w),
+          y: toPx(c.region.y, h),
+          width: Math.max(12, toPx(c.region.width, w)),
+          height: Math.max(12, toPx(c.region.height, h))
+        };
+      }
+
+      return {
+        x: toPx(c.position?.x ?? 0, w),
+        y: toPx(c.position?.y ?? 0, h),
+        width: Math.max(12, toPx(c.size?.width ?? 0.1, w)),
+        height: Math.max(12, toPx(c.size?.height ?? 0.1, h))
+      };
+    }
+
+    getPosition() {
+      const b = this.getBounds();
+      return { x: b.x, y: b.y };
+    }
+
+    getSize() {
+      const b = this.getBounds();
+      return { width: b.width, height: b.height };
+    }
+
+    setPosition(x, y) {
+      const b = this.getBounds();
+      this.setBounds(x, y, b.width, b.height);
+    }
+
+    setBounds(x, y, width, height) {
+      const { w, h } = this.space();
+      const bw = Math.max(16, width);
+      const bh = Math.max(16, height);
+      const c = this.config;
+
+      if (c.type === "candle") {
+        const r = Math.min(bw, bh) / 2;
+        c.radius = r / Math.min(w, h);
+        if (!c.position) c.position = { x: 0.5, y: 0.5 };
+        c.position.x = (x + bw / 2) / w;
+        c.position.y = (y + bh / 2) / h;
+        return;
+      }
+
+      if (c.region) {
+        c.region.x = x / w;
+        c.region.y = y / h;
+        c.region.width = bw / w;
+        c.region.height = bh / h;
+        return;
+      }
+
+      if (!c.position) c.position = { x: 0, y: 0 };
+      if (!c.size) c.size = { width: 0.1, height: 0.1 };
+      c.position.x = x / w;
+      c.position.y = y / h;
+      c.size.width = bw / w;
+      c.size.height = bh / h;
+    }
+
+    containsPoint(x, y) {
+      const b = this.getBounds();
+      const pad = 6;
+      return x >= b.x - pad && x <= b.x + b.width + pad
+        && y >= b.y - pad && y <= b.y + b.height + pad;
+    }
+
+    handles() {
+      const b = this.getBounds();
+      return [
+        { name: "nw", x: b.x, y: b.y },
+        { name: "ne", x: b.x + b.width, y: b.y },
+        { name: "sw", x: b.x, y: b.y + b.height },
+        { name: "se", x: b.x + b.width, y: b.y + b.height }
+      ];
+    }
+
+    hitHandle(x, y) {
+      const slop = 10;
+      const found = this.handles().find((handle) => Math.abs(handle.x - x) <= slop && Math.abs(handle.y - y) <= slop);
+      return found ? found.name : null;
+    }
+
+    drawGuide(ctx, selected) {
+      const b = this.getBounds();
+      const meta = TYPE_META[this.config.type] || { icon: "•", label: this.config.type };
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      if (this.config.enabled === false) ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = selected ? "#f0a05a" : "rgba(255,244,230,0.55)";
+      ctx.lineWidth = selected ? 1.5 : 1;
+      ctx.setLineDash(selected ? [] : [5, 4]);
+      ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.width, b.height);
+      ctx.setLineDash([]);
+
+      const text = `${meta.icon} ${meta.label}`;
+      ctx.font = "12px Segoe UI, sans-serif";
+      const tw = ctx.measureText(text).width;
+      const lx = b.x;
+      const ly = Math.max(0, b.y - 20);
+      ctx.fillStyle = selected ? "rgba(240,160,90,0.92)" : "rgba(20,16,12,0.72)";
+      ctx.fillRect(lx, ly, tw + 12, 18);
+      ctx.fillStyle = selected ? "#1a120c" : "#fff8ef";
+      ctx.fillText(text, lx + 6, ly + 13);
+      ctx.restore();
+    }
+
+    drawSelectionHandles(ctx) {
+      const size = 8;
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "#fff8ef";
+      ctx.strokeStyle = "#e39a45";
+      ctx.lineWidth = 1.5;
+      this.handles().forEach((handle) => {
+        ctx.fillRect(handle.x - size / 2, handle.y - size / 2, size, size);
+        ctx.strokeRect(handle.x - size / 2, handle.y - size / 2, size, size);
+      });
+      ctx.restore();
+    }
+
+    draw(ctx) {
+      this.drawGuide(ctx, false);
+    }
+
+    getConfig() {
+      return this.config;
+    }
+  }
+
+  class VisualEditor {
+    constructor(canvas, imageElement) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext("2d");
+      this.image = imageElement;
+      this.elements = [];
+      this.effects = new Map();
+      this.selectedElement = null;
+      this.isDragging = false;
+      this.dragMode = null;
+      this.activeHandle = null;
+      this.dragOffset = { x: 0, y: 0 };
+      this.dragOrigin = null;
+      this.showZones = true;
+      this.running = false;
+      this.last = 0;
+      this.viewWidth = canvas.width || 1;
+      this.viewHeight = canvas.height || 1;
+      this.dpr = 1;
+      this.onSelect = null;
+      this.onChange = null;
+      this._broken = new Set();
+      this.ambient = null;
+      this._ambientFx = null;
+    }
+
+    addElement(elementConfig) {
+      const config = JSON.parse(JSON.stringify(elementConfig));
+      if (!config.id) {
+        config.id = `el_${Date.now().toString(36)}_${Math.floor(Math.random() * 9999)}`;
+      }
+      const element = new VisualElement(config, this.canvas);
+      element.editor = this;
+      this.elements.push(element);
+      this._mountEffect(element);
+      return element;
+    }
+
+    _mountEffect(element) {
+      if (!root.LivingEffects) return null;
+      const fx = root.LivingEffects.createEffect(element.config);
+      if (!fx) return null;
+      this.effects.set(element.config.id, fx);
+      return fx;
+    }
+
+    clearElements() {
+      this.elements = [];
+      this.effects.clear();
+      this.selectedElement = null;
+      this._broken.clear();
+    }
+
+    removeElement(elementId) {
+      this.elements = this.elements.filter((el) => el.config.id !== elementId);
+      this.effects.delete(elementId);
+      if (this.selectedElement && this.selectedElement.config.id === elementId) {
+        this.selectedElement = null;
+      }
+      if (typeof this.onChange === "function") this.onChange();
+    }
+
+    selectElement(elementId) {
+      this.selectedElement = this.elements.find((el) => el.config.id === elementId) || null;
+      if (typeof this.onSelect === "function") this.onSelect(this.selectedElement);
+      return this.selectedElement;
+    }
+
+    moveElement(elementId, direction) {
+      const index = this.elements.findIndex((el) => el.config.id === elementId);
+      const next = index + direction;
+      if (index < 0 || next < 0 || next >= this.elements.length) return;
+      const [item] = this.elements.splice(index, 1);
+      this.elements.splice(next, 0, item);
+      if (typeof this.onChange === "function") this.onChange();
+    }
+
+    updateElement(elementId, properties) {
+      const element = this.elements.find((el) => el.config.id === elementId);
+      if (!element) return;
+      Object.assign(element.config, properties);
+      if (typeof this.onChange === "function") this.onChange();
+    }
+
+    handleMouseDown(x, y) {
+      if (this.selectedElement) {
+        const handle = this.selectedElement.hitHandle(x, y);
+        if (handle) {
+          this.isDragging = true;
+          this.dragMode = "resize";
+          this.activeHandle = handle;
+          this.dragOrigin = { x: x, y: y, bounds: this.selectedElement.getBounds() };
+          return true;
+        }
+      }
+
+      for (let i = this.elements.length - 1; i >= 0; i--) {
+        const element = this.elements[i];
+        if (element.containsPoint(x, y)) {
+          this.selectedElement = element;
+          this.isDragging = true;
+          this.dragMode = "move";
+          const pos = element.getBounds();
+          this.dragOffset = { x: x - pos.x, y: y - pos.y };
+          if (typeof this.onSelect === "function") this.onSelect(element);
+          return true;
+        }
+      }
+
+      this.selectedElement = null;
+      if (typeof this.onSelect === "function") this.onSelect(null);
+      return false;
+    }
+
+    handleMouseMove(x, y) {
+      if (!this.isDragging || !this.selectedElement) return;
+
+      if (this.dragMode === "resize" && this.dragOrigin) {
+        const b = this.dragOrigin.bounds;
+        const dx = x - this.dragOrigin.x;
+        const dy = y - this.dragOrigin.y;
+        let nx = b.x;
+        let ny = b.y;
+        let nw = b.width;
+        let nh = b.height;
+        if (this.activeHandle.indexOf("e") !== -1) nw = b.width + dx;
+        if (this.activeHandle.indexOf("s") !== -1) nh = b.height + dy;
+        if (this.activeHandle.indexOf("w") !== -1) {
+          nw = b.width - dx;
+          nx = b.x + dx;
+        }
+        if (this.activeHandle.indexOf("n") !== -1) {
+          nh = b.height - dy;
+          ny = b.y + dy;
+        }
+        this.selectedElement.setBounds(nx, ny, nw, nh);
+        return;
+      }
+
+      const bounds = this.selectedElement.getBounds();
+      this.selectedElement.setBounds(
+        x - this.dragOffset.x,
+        y - this.dragOffset.y,
+        bounds.width,
+        bounds.height
+      );
+    }
+
+    handleMouseUp() {
+      const was = this.isDragging;
+      this.isDragging = false;
+      this.dragMode = null;
+      this.activeHandle = null;
+      this.dragOrigin = null;
+      if (was && typeof this.onChange === "function") this.onChange();
+    }
+
+    updateCursor(x, y) {
+      if (!this.canvas) return;
+      if (this.selectedElement && this.selectedElement.hitHandle(x, y)) {
+        const name = this.selectedElement.hitHandle(x, y);
+        this.canvas.style.cursor = (name === "nw" || name === "se") ? "nwse-resize" : "nesw-resize";
+        return;
+      }
+      const over = this.elements.some((el) => el.containsPoint(x, y));
+      this.canvas.style.cursor = over ? "grab" : "default";
+    }
+
+    exportToJSON() {
+      return {
+        coords: "relative",
+        elements: this.elements.map((el) => JSON.parse(JSON.stringify(el.getConfig())))
+      };
+    }
+
+    importFromJSON(json) {
+      this.clearElements();
+      const list = (json && (json.elements || json.animated_elements)) || [];
+      list.forEach((config) => this.addElement(config));
+    }
+
+    start() {
+      if (this.running) return;
+      this.running = true;
+      this.last = performance.now();
+      const loop = (now) => {
+        if (!this.running) return;
+        const dt = Math.min(0.05, (now - this.last) / 1000);
+        this.last = now;
+        this._paint(dt);
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    }
+
+    stop() {
+      this.running = false;
+    }
+
+    render() {
+      this._paint(0);
+    }
+
+    _paint(dt) {
+      const ctx = this.ctx;
+      if (!ctx) return;
+      const w = this.viewWidth || this.canvas.width;
+      const h = this.viewHeight || this.canvas.height;
+      const dpr = this.dpr || 1;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "source-over";
+
+      if (this.image && this.image.naturalWidth) {
+        ctx.drawImage(this.image, 0, 0, w, h);
+      }
+
+      this.elements.forEach((element) => {
+        const fx = this.effects.get(element.config.id);
+        if (element.config.enabled !== false && fx && !this._broken.has(element.config.id)) {
+          try {
+            fx.cfg = element.config;
+            if (fx.layout) fx.layout(w, h);
+            if (fx.setBackground) fx.setBackground(this.image);
+            if (dt) fx.update(dt);
+            fx.draw(ctx, w, h);
+          } catch (err) {
+            console.error(err);
+            this._broken.add(element.config.id);
+          }
+        }
+      });
+
+      if (this.ambient && this.ambient.enabled !== false && root.LivingEffects) {
+        if (!this._ambientFx) this._ambientFx = new root.LivingEffects.AmbientLight(this.ambient);
+        this._ambientFx.cfg = this.ambient;
+        if (dt) this._ambientFx.update(dt);
+        this._ambientFx.draw(ctx, w, h);
+      }
+
+      if (this.showZones) {
+        this.elements.forEach((element) => {
+          element.drawGuide(ctx, element === this.selectedElement);
+        });
+      } else if (this.selectedElement) {
+        this.selectedElement.drawGuide(ctx, true);
+      }
+
+      if (this.selectedElement) this.selectedElement.drawSelectionHandles(ctx);
+    }
+  }
+
+  root.TYPE_META = TYPE_META;
+  root.VisualElement = VisualElement;
+  root.VisualEditor = VisualEditor;
+})(typeof window !== "undefined" ? window : globalThis);
+
+
+/**
+ * Application « Tableau vivant ».
+ * Trois étapes : description, édition, export HTML autonome.
+ */
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "animationApp";
+
+  const FIELD_RANGES = {
+    "position.x": { min: 0, max: 1, step: 0.01 },
+    "position.y": { min: 0, max: 1, step: 0.01 },
+    "size.width": { min: 0.02, max: 1, step: 0.01 },
+    "size.height": { min: 0.02, max: 1, step: 0.01 },
+    "region.x": { min: 0, max: 1, step: 0.01 },
+    "region.y": { min: 0, max: 1, step: 0.01 },
+    "region.width": { min: 0.05, max: 1, step: 0.01 },
+    "region.height": { min: 0.05, max: 1, step: 0.01 },
+    intensity: { min: 0, max: 1.2, step: 0.02 },
+    opacity: { min: 0, max: 1, step: 0.02 },
+    radius: { min: 0.015, max: 0.28, step: 0.005 },
+    particle_count: { min: 10, max: 180, step: 1 },
+    flicker_speed: { min: 0.2, max: 5, step: 0.1 },
+    speed: { min: 0.05, max: 1.6, step: 0.05 },
+    shimmer_intensity: { min: 0, max: 0.8, step: 0.02 },
+    count: { min: 0, max: 120, step: 1 },
+    twinkle_speed: { min: 0.2, max: 4, step: 0.1 },
+    wave_amplitude: { min: 0, max: 24, step: 0.5 },
+    wave_frequency: { min: 0.005, max: 0.08, step: 0.001 },
+    sway_amount: { min: 0, max: 24, step: 0.5 },
+    sway_speed: { min: 0.05, max: 2, step: 0.05 }
+  };
+
+  const FIELD_LABELS = {
+    "position.x": "Position horizontale",
+    "position.y": "Position verticale",
+    "size.width": "Largeur",
+    "size.height": "Hauteur",
+    "region.x": "Zone — gauche",
+    "region.y": "Zone — haut",
+    "region.width": "Zone — largeur",
+    "region.height": "Zone — hauteur",
+    intensity: "Intensité",
+    opacity: "Opacité",
+    radius: "Rayon du halo",
+    particle_count: "Particules",
+    flicker_speed: "Vitesse du scintillement",
+    speed: "Vitesse",
+    shimmer_intensity: "Scintillement",
+    count: "Nombre",
+    twinkle_speed: "Vitesse des étoiles",
+    wave_amplitude: "Amplitude des vagues",
+    wave_frequency: "Fréquence des vagues",
+    sway_amount: "Amplitude du vent",
+    sway_speed: "Vitesse du vent",
+    color: "Couleur",
+    "colors.0": "Teinte",
+    direction: "Direction",
+    blend_mode: "Fusion"
+  };
+
+  class AnimationApp {
+    constructor() {
+      this.currentStep = 1;
+      this.image = null;
+      this.imageDataUrl = null;
+      this.persistImage = null;
+      this.parser = new TextParser();
+      this.editor = null;
+      this._dragging = false;
+      this._analyzedOnce = false;
+      this._toastTimer = 0;
+      this._saveTimer = 0;
+      this.ambient = {
+        enabled: true,
+        color: "#FFA500",
+        intensity: 0.18,
+        pulse_speed: 0.4
+      };
+      this.description = "";
+      this.init();
+    }
+
+    init() {
+      try {
+        this.setupEventListeners();
+        const restored = this.loadFromLocalStorage();
+        if (!restored) this.showStep(1);
+      } catch (err) {
+        console.error(err);
+        this.showBootError(err);
+        this.showStep(1);
+      }
+    }
+
+    showBootError(err) {
+      const box = document.getElementById("bootError");
       if (!box) return;
       box.className = "show";
-      box.textContent = "Erreur : " + (event.message || "script bloqué");
+      box.textContent = "Erreur au démarrage : " + (err && err.message ? err.message : String(err));
+    }
+
+    setupEventListeners() {
+      const upload = document.getElementById("imageUpload");
+      if (!upload) throw new Error("Zone d'image introuvable dans la page.");
+      upload.addEventListener("change", (event) => this.handleImageUpload(event));
+
+      const dropZone = document.getElementById("dropZone");
+      ["dragenter", "dragover"].forEach((name) => {
+        dropZone.addEventListener(name, (event) => {
+          event.preventDefault();
+          dropZone.classList.add("is-over");
+        });
+      });
+      ["dragleave", "drop"].forEach((name) => {
+        dropZone.addEventListener(name, (event) => {
+          event.preventDefault();
+          dropZone.classList.remove("is-over");
+        });
+      });
+      dropZone.addEventListener("drop", (event) => {
+        const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+        if (file) this.handleImageFile(file);
+      });
+
+      document.getElementById("analyzeButton").addEventListener("click", () => {
+        this.analyzeDescription();
+      });
+
+      document.querySelectorAll(".example-btn").forEach((btn) => {
+        btn.addEventListener("click", (event) => {
+          const example = event.currentTarget.dataset.example || "";
+          document.getElementById("description").value = example;
+          this.description = example;
+          this.scheduleSave();
+        });
+      });
+
+      document.getElementById("description").addEventListener("input", (event) => {
+        this.description = event.target.value;
+        this.scheduleSave();
+      });
+
+      const canvas = document.getElementById("editorCanvas");
+      canvas.addEventListener("pointerdown", (event) => this.handleCanvasMouseDown(event));
+      window.addEventListener("pointermove", (event) => this.handleCanvasMouseMove(event));
+      window.addEventListener("pointerup", () => this.handleCanvasMouseUp());
+
+      document.getElementById("propertyPanel").addEventListener("input", (event) => {
+        this.handlePropertyChange(event);
+      });
+
+      document.getElementById("addGrid").addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-add]");
+        if (!btn) return;
+        this.addEffect(btn.dataset.add);
+      });
+
+      document.getElementById("elementList").addEventListener("click", (event) => {
+        this.handleListClick(event);
+      });
+
+      document.getElementById("toggleZones").addEventListener("change", (event) => {
+        if (!this.editor) return;
+        this.editor.showZones = event.target.checked;
+      });
+
+      document.getElementById("ambientPanel").addEventListener("input", () => {
+        this.readAmbientFromForm();
+        this.scheduleSave();
+      });
+
+      document.getElementById("exportButton").addEventListener("click", () => {
+        this.exportAnimation();
+      });
+      document.getElementById("copyButton").addEventListener("click", () => {
+        this.copyAnimation();
+      });
+      document.getElementById("restartButton").addEventListener("click", () => {
+        this.restart();
+      });
+
+      document.getElementById("prevButton").addEventListener("click", () => this.prevStep());
+      document.getElementById("nextButton").addEventListener("click", () => this.nextStep());
+
+      document.querySelectorAll(".progress-step").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          this.gotoStep(Number(btn.dataset.step));
+        });
+      });
+
+      document.addEventListener("keydown", (event) => this.handleKeyDown(event));
+
+      const wrap = document.getElementById("stageWrap");
+      if (typeof ResizeObserver !== "undefined") {
+        this._resizeObserver = new ResizeObserver(() => {
+          if (this.currentStep === 2) this.fitStage();
+        });
+        this._resizeObserver.observe(wrap);
+      } else {
+        window.addEventListener("resize", () => {
+          if (this.currentStep === 2) this.fitStage();
+        });
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        if (!this.editor) return;
+        if (document.hidden) this.editor.stop();
+        else if (this.currentStep === 2) this.editor.start();
+      });
+    }
+
+    handleImageUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (file) this.handleImageFile(file);
+      event.target.value = "";
+    }
+
+    async handleImageFile(file) {
+      if (!file || !file.type || file.type.indexOf("image/") !== 0) {
+        this.toast("Choisissez un fichier image (JPG, PNG, WebP…).", "error");
+        return;
+      }
+      try {
+        const dataUrl = await readFileAsDataURL(file);
+        let working = dataUrl;
+        if (file.size > 1800000) {
+          working = await compressDataUrl(dataUrl, 1600, 0.85);
+          this.toast("Image allégée pour rester fluide dans le navigateur.");
+        }
+        await this.setImage(working);
+        this.persistImage = working;
+        this.imageDataUrl = working;
+        const nameLine = document.getElementById("imageFileName");
+        if (nameLine) {
+          nameLine.hidden = false;
+          nameLine.textContent = "Image prête : " + (file.name || "fichier local");
+        }
+        this.saveToLocalStorage();
+        this.toast("Image chargée.");
+      } catch (err) {
+        console.error(err);
+        this.toast("Impossible de lire cette image.", "error");
+      }
+    }
+
+    setImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          this.image = img;
+          this.imageDataUrl = src;
+          const preview = document.getElementById("uploadPreview");
+          const bg = document.getElementById("backgroundImage");
+          preview.src = src;
+          preview.hidden = false;
+          bg.src = src;
+          bg.hidden = false;
+          bg.style.display = "block";
+          document.getElementById("dropZone").classList.add("has-image");
+
+          const canvas = document.getElementById("editorCanvas");
+          if (!this.editor) {
+            this.editor = new VisualEditor(canvas, img);
+            this.editor.showZones = document.getElementById("toggleZones").checked;
+            this.editor.onSelect = (element) => {
+              if (element) this.showPropertyPanel(element);
+              else this.hidePropertyPanel();
+              this.refreshElementList();
+            };
+            this.editor.onChange = () => this.scheduleSave();
+          } else {
+            this.editor.image = img;
+          }
+          this.fitStage();
+          resolve(img);
+        };
+        img.onerror = () => reject(new Error("image"));
+        img.src = src;
+      });
+    }
+
+    analyzeDescription() {
+      const description = document.getElementById("description").value;
+      this.description = description;
+
+      if (!description.trim()) {
+        this.toast("Écrivez une description de la scène.", "error");
+        return;
+      }
+      if (!this.image || !this.editor) {
+        this.toast("Ajoutez d'abord une image de fond.", "error");
+        return;
+      }
+
+      if (this._analyzedOnce && this.editor.elements.length) {
+        const redo = window.confirm("Relancer l'analyse remplace les éléments déjà placés. Continuer ?");
+        if (!redo) {
+          this.currentStep = 2;
+          this.showStep(2);
+          return;
+        }
+      }
+
+      let elements = [];
+      try {
+        elements = this.parser.parseDescription(description);
+      } catch (err) {
+        console.error(err);
+        this.toast("L'analyse du texte a échoué.", "error");
+        return;
+      }
+
+      if (!elements.length) {
+        this.toast("Aucun élément reconnu. Essayez « feu », « bougie », « étoiles », « brume »…", "error");
+        return;
+      }
+
+      this.editor.clearElements();
+      elements.forEach((config) => this.editor.addElement(config));
+      this._analyzedOnce = true;
+      this.applyAmbientFor(elements);
+
+      this.currentStep = 2;
+      this.showStep(2);
+      this.refreshElementList();
+      this.hidePropertyPanel();
+      this.saveToLocalStorage();
+      this.setStatus(`${elements.length} élément${elements.length > 1 ? "s" : ""} placé${elements.length > 1 ? "s" : ""}.`);
+      this.toast("Animation composée. Ajustez les zones si besoin.");
+    }
+
+    applyAmbientFor(elements) {
+      const types = elements.map((el) => el.type);
+      const warm = types.includes("fire") || types.includes("candle");
+      const night = types.includes("stars") || types.includes("window_light");
+      if (warm) {
+        this.ambient = { enabled: true, color: "#FFA500", intensity: 0.2, pulse_speed: 0.38 };
+      } else if (night) {
+        this.ambient = { enabled: true, color: "#6FA8DC", intensity: 0.12, pulse_speed: 0.28 };
+      }
+      this.writeAmbientToForm();
+      if (this.editor) this.editor.ambient = this.ambient;
+    }
+
+    addEffect(type) {
+      if (!this.editor || !this.image) {
+        this.toast("Ajoutez une image avant de poser un effet.", "error");
+        return;
+      }
+      const config = this.parser.createElement(type, "");
+      if (!config) return;
+      const same = this.editor.elements.filter((el) => el.config.type === type).length;
+      if (config.position) {
+        config.position.x = Math.min(0.9, (config.position.x || 0.4) + same * 0.07);
+        config.position.y = Math.min(0.88, (config.position.y || 0.4) + (same % 2) * 0.06);
+      }
+      if (config.region) {
+        config.region.x = Math.min(0.4, (config.region.x || 0) + same * 0.04);
+      }
+      const element = this.editor.addElement(config);
+      this.editor.selectElement(element.config.id);
+      this.showPropertyPanel(element);
+      this.refreshElementList();
+      this.saveToLocalStorage();
+    }
+
+    handleListClick(event) {
+      if (!this.editor) return;
+      const row = event.target.closest("[data-id]");
+      if (!row) return;
+      const id = row.dataset.id;
+      const action = event.target.closest("[data-action]");
+      if (!action) {
+        this.editor.selectElement(id);
+        return;
+      }
+      const name = action.dataset.action;
+      if (name === "delete") {
+        this.editor.removeElement(id);
+        this.hidePropertyPanel();
+      } else if (name === "up") {
+        this.editor.moveElement(id, -1);
+      } else if (name === "down") {
+        this.editor.moveElement(id, 1);
+      } else if (name === "toggle") {
+        const element = this.editor.elements.find((el) => el.config.id === id);
+        if (element) element.config.enabled = !element.config.enabled;
+      }
+      this.refreshElementList();
+      this.scheduleSave();
+    }
+
+    handleCanvasMouseDown(event) {
+      if (!this.editor || this.currentStep !== 2) return;
+      if (event.button != null && event.button !== 0) return;
+      const point = this.canvasPoint(event);
+      const found = this.editor.handleMouseDown(point.x, point.y);
+      this._dragging = true;
+      if (found && this.editor.selectedElement) this.showPropertyPanel(this.editor.selectedElement);
+      else this.hidePropertyPanel();
+      this.refreshElementList();
+      try {
+        event.target.setPointerCapture(event.pointerId);
+      } catch (err) {
+        /* pointeur déjà relâché */
+      }
+    }
+
+    handleCanvasMouseMove(event) {
+      if (!this.editor || this.currentStep !== 2) return;
+      const point = this.canvasPoint(event);
+      if (this._dragging) {
+        this.editor.handleMouseMove(point.x, point.y);
+        if (this.editor.selectedElement) this.syncPropertyValues(this.editor.selectedElement);
+        return;
+      }
+      if (event.target && event.target.id === "editorCanvas") {
+        this.editor.updateCursor(point.x, point.y);
+      }
+    }
+
+    handleCanvasMouseUp() {
+      if (!this._dragging || !this.editor) return;
+      this._dragging = false;
+      this.editor.handleMouseUp();
+      this.saveToLocalStorage();
+    }
+
+    canvasPoint(event) {
+      const canvas = document.getElementById("editorCanvas");
+      const rect = canvas.getBoundingClientRect();
+      const vw = this.editor && this.editor.viewWidth ? this.editor.viewWidth : rect.width;
+      const vh = this.editor && this.editor.viewHeight ? this.editor.viewHeight : rect.height;
+      const sx = rect.width ? vw / rect.width : 1;
+      const sy = rect.height ? vh / rect.height : 1;
+      return {
+        x: (event.clientX - rect.left) * sx,
+        y: (event.clientY - rect.top) * sy
+      };
+    }
+
+    showPropertyPanel(element) {
+      const panel = document.getElementById("propertyPanel");
+      const empty = document.getElementById("propertyEmpty");
+      panel.style.display = "block";
+      empty.style.display = "none";
+      if (panel.dataset.eid !== element.config.id) {
+        panel.dataset.eid = element.config.id;
+        this.buildPropertyPanel(element);
+      } else {
+        this.syncPropertyValues(element);
+      }
+    }
+
+    buildPropertyPanel(element) {
+      const panel = document.getElementById("propertyPanel");
+      panel.innerHTML = "";
+      const config = element.config;
+      const meta = (window.TYPE_META && window.TYPE_META[config.type]) || { label: config.type, icon: "" };
+
+      const title = document.createElement("p");
+      title.className = "property-title";
+      title.textContent = `${meta.icon} ${meta.label}`;
+      panel.appendChild(title);
+
+      this._appendField(panel, {
+        key: "enabled",
+        label: "Visible",
+        type: "checkbox",
+        value: config.enabled !== false
+      });
+
+      fieldsFor(config).forEach((field) => {
+        this._appendField(panel, field);
+      });
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "btn btn-danger";
+      del.textContent = "Supprimer l'élément";
+      del.addEventListener("click", () => {
+        this.editor.removeElement(config.id);
+        this.hidePropertyPanel();
+        this.refreshElementList();
+        this.saveToLocalStorage();
+      });
+      panel.appendChild(del);
+    }
+
+    _appendField(panel, field) {
+      const row = document.createElement("div");
+      row.className = "property-row";
+
+      const label = document.createElement("label");
+      label.textContent = field.label;
+
+      const input = document.createElement(field.type === "select" ? "select" : "input");
+      input.dataset.key = field.key;
+
+      if (field.type === "select") {
+        field.options.forEach((opt) => {
+          const option = document.createElement("option");
+          option.value = opt.value;
+          option.textContent = opt.label;
+          if (String(opt.value) === String(field.value)) option.selected = true;
+          input.appendChild(option);
+        });
+      } else if (field.type === "checkbox") {
+        input.type = "checkbox";
+        input.checked = Boolean(field.value);
+      } else {
+        input.type = field.type;
+        if (field.min != null) input.min = String(field.min);
+        if (field.max != null) input.max = String(field.max);
+        if (field.step != null) input.step = String(field.step);
+        input.value = field.value == null ? "" : String(field.value);
+      }
+
+      if (field.type === "range") {
+        const out = document.createElement("output");
+        out.textContent = formatField(field.key, field.value);
+        label.appendChild(out);
+        input.addEventListener("input", () => {
+          out.textContent = formatField(field.key, input.value);
+        });
+      }
+
+      row.appendChild(label);
+      row.appendChild(input);
+      panel.appendChild(row);
+    }
+
+    syncPropertyValues(element) {
+      const panel = document.getElementById("propertyPanel");
+      if (!panel || panel.dataset.eid !== element.config.id) return;
+      panel.querySelectorAll("[data-key]").forEach((input) => {
+        if (document.activeElement === input && input.type !== "range") return;
+        const value = this.getNestedValue(element.config, input.dataset.key);
+        if (input.type === "checkbox") {
+          input.checked = value !== false;
+          return;
+        }
+        if (value == null) return;
+        if (String(input.value) !== String(value)) input.value = value;
+        if (input.type === "range") {
+          const out = input.parentElement && input.parentElement.querySelector("output");
+          if (out) out.textContent = formatField(input.dataset.key, value);
+        }
+      });
+    }
+
+    hidePropertyPanel() {
+      const panel = document.getElementById("propertyPanel");
+      panel.style.display = "none";
+      panel.dataset.eid = "";
+      document.getElementById("propertyEmpty").style.display = "block";
+    }
+
+    handlePropertyChange(event) {
+      if (!this.editor || !this.editor.selectedElement) return;
+      const input = event.target;
+      const key = input.dataset.key;
+      if (!key) return;
+
+      let value;
+      if (input.type === "checkbox") value = input.checked;
+      else if (input.type === "range" || input.type === "number") value = parseFloat(input.value);
+      else value = input.value;
+
+      const config = this.editor.selectedElement.config;
+      if (key === "colors.0" && typeof value === "string") {
+        config.colors = [value, mixWithWhite(value, 0.4), mixWithWhite(value, 0.72)];
+      } else {
+        this.setNestedValue(config, key, value);
+      }
+
+      const out = input.parentElement && input.parentElement.querySelector("output");
+      if (out) out.textContent = formatField(key, value);
+      this.scheduleSave();
+    }
+
+    getNestedValue(obj, path) {
+      return path.split(".").reduce((acc, part) => (acc == null ? acc : acc[part]), obj);
+    }
+
+    setNestedValue(obj, path, value) {
+      const parts = path.split(".");
+      const last = parts.pop();
+      let target = obj;
+      parts.forEach((part) => {
+        if (target[part] == null || typeof target[part] !== "object") target[part] = {};
+        target = target[part];
+      });
+      if (target) target[last] = value;
+    }
+
+    refreshElementList() {
+      const list = document.getElementById("elementList");
+      if (!list) return;
+      list.innerHTML = "";
+      if (!this.editor || !this.editor.elements.length) {
+        const empty = document.createElement("p");
+        empty.className = "muted";
+        empty.textContent = "Aucun élément pour l'instant.";
+        list.appendChild(empty);
+        return;
+      }
+      const selectedId = this.editor.selectedElement && this.editor.selectedElement.config.id;
+      this.editor.elements.forEach((element) => {
+        const meta = (window.TYPE_META && window.TYPE_META[element.config.type]) || { icon: "•", label: element.config.type };
+        const row = document.createElement("div");
+        row.className = "element-item" + (element.config.id === selectedId ? " is-selected" : "") + (element.config.enabled === false ? " is-off" : "");
+        row.dataset.id = element.config.id;
+
+        const name = document.createElement("button");
+        name.type = "button";
+        name.className = "element-name";
+        name.textContent = `${meta.icon} ${meta.label}`;
+
+        const actions = document.createElement("div");
+        actions.className = "element-actions";
+        actions.appendChild(iconButton("toggle", element.config.enabled === false ? "Afficher" : "Masquer", element.config.enabled === false ? "○" : "●"));
+        actions.appendChild(iconButton("up", "Monter", "↑"));
+        actions.appendChild(iconButton("down", "Descendre", "↓"));
+        actions.appendChild(iconButton("delete", "Supprimer", "×"));
+
+        row.appendChild(name);
+        row.appendChild(actions);
+        list.appendChild(row);
+      });
+    }
+
+    readAmbientFromForm() {
+      this.ambient = {
+        enabled: document.getElementById("ambientEnabled").checked,
+        color: document.getElementById("ambientColor").value,
+        intensity: parseFloat(document.getElementById("ambientIntensity").value),
+        pulse_speed: parseFloat(document.getElementById("ambientPulse").value)
+      };
+      const out = document.getElementById("ambientIntensityOut");
+      if (out) out.textContent = `${Math.round((this.ambient.intensity || 0) * 100)} %`;
+      if (this.editor) this.editor.ambient = this.ambient;
+    }
+
+    writeAmbientToForm() {
+      const a = this.ambient || {};
+      document.getElementById("ambientEnabled").checked = a.enabled !== false;
+      document.getElementById("ambientColor").value = toColorInput(a.color || "#FFA500");
+      document.getElementById("ambientIntensity").value = String(a.intensity ?? 0.18);
+      document.getElementById("ambientPulse").value = String(a.pulse_speed ?? 0.4);
+      const out = document.getElementById("ambientIntensityOut");
+      if (out) out.textContent = `${Math.round((a.intensity ?? 0.18) * 100)} %`;
+    }
+
+    async exportAnimation() {
+      try {
+        const html = await this.generateStandaloneHTML();
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "animation.html";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        this.toast("Fichier animation.html téléchargé.");
+      } catch (err) {
+        console.error(err);
+        this.toast(err.message || "Export impossible.", "error");
+      }
+    }
+
+    async copyAnimation() {
+      try {
+        const html = await this.generateStandaloneHTML();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(html);
+        } else {
+          const area = document.createElement("textarea");
+          area.value = html;
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand("copy");
+          area.remove();
+        }
+        this.toast("Code copié dans le presse-papiers.");
+      } catch (err) {
+        console.error(err);
+        this.toast("Impossible de copier le code.", "error");
+      }
+    }
+
+    async generateStandaloneHTML() {
+      if (!this.imageDataUrl) throw new Error("Aucune image à exporter.");
+      const effectsCode = this.getAllEffectsCode();
+      const scene = {
+        coords: "relative",
+        description: this.description || "",
+        ambient_light: this.ambient,
+        elements: this.editor ? this.editor.exportToJSON().elements : []
+      };
+      const json = JSON.stringify(scene).replace(/</g, "\\u003c");
+      const safeEffects = effectsCode.replace(/<\/script/gi, "<\\/script");
+
+      return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tableau vivant</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; }
+    #container {
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #stage { position: relative; line-height: 0; }
+    #background { display: block; width: 100%; height: 100%; }
+    #overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="stage">
+      <img id="background" alt="" src="${this.imageDataUrl}">
+      <canvas id="overlay"></canvas>
+    </div>
+  </div>
+  <${"script"}>
+${safeEffects}
+    const scene = ${json};
+    const img = document.getElementById("background");
+    const canvas = document.getElementById("overlay");
+    let player = null;
+
+    function fit() {
+      const nw = img.naturalWidth || 1280;
+      const nh = img.naturalHeight || 720;
+      const scale = Math.min(window.innerWidth / nw, window.innerHeight / nh);
+      const w = Math.max(2, Math.round(nw * scale));
+      const h = Math.max(2, Math.round(nh * scale));
+      const stage = document.getElementById("stage");
+      stage.style.width = w + "px";
+      stage.style.height = h + "px";
+      if (!player) {
+        canvas.width = w;
+        canvas.height = h;
+        player = new LivingEffects.ScenePlayer(canvas, scene, img);
+        player.start();
+      } else {
+        player.resize(w, h);
+      }
+    }
+
+    function boot() {
+      fit();
+      window.addEventListener("resize", fit);
+      document.addEventListener("visibilitychange", function () {
+        if (!player) return;
+        if (document.hidden) player.stop();
+        else player.start();
+      });
+    }
+
+    if (img.complete && img.naturalWidth) boot();
+    else img.onload = boot;
+  </${"script"}>
+</body>
+</html>`;
+    }
+
+    getAllEffectsCode() {
+      if (typeof installLivingEffects !== "function") {
+        throw new Error("Le moteur d'effets n'est pas chargé.");
+      }
+      const source = installLivingEffects.toString();
+      if (!source || source.indexOf("FireEffect") === -1) {
+        throw new Error("Impossible d'inclure le moteur d'effets dans l'export.");
+      }
+      return `(${source})(window);`;
+    }
+
+    async refreshPreview() {
+      const frame = document.getElementById("previewFrame");
+      if (!this.imageDataUrl) {
+        frame.removeAttribute("srcdoc");
+        this.toast("Aucune image à prévisualiser.", "error");
+        return;
+      }
+      try {
+        const html = await this.generateStandaloneHTML();
+        frame.srcdoc = html;
+      } catch (err) {
+        console.error(err);
+        this.toast(err.message || "Prévisualisation impossible.", "error");
+      }
+    }
+
+    showStep(step) {
+      this.currentStep = Number(step) || 1;
+      document.querySelectorAll(".step").forEach((el) => {
+        el.classList.remove("is-on");
+      });
+      const section = document.getElementById(`step${this.currentStep}`);
+      if (section) section.classList.add("is-on");
+
+      const n = this.currentStep;
+      document.querySelectorAll(".progress-step").forEach((el, i) => {
+        el.classList.toggle("active", i < n);
+        el.classList.toggle("current", i === n - 1);
+        if (i === n - 1) el.setAttribute("aria-current", "step");
+        else el.removeAttribute("aria-current");
+      });
+
+      const prev = document.getElementById("prevButton");
+      const next = document.getElementById("nextButton");
+      if (prev) prev.style.display = n > 1 ? "inline-flex" : "none";
+      if (next) {
+        next.style.display = n === 3 ? "none" : "inline-flex";
+        next.textContent = n === 1 ? "Analyser →" : "Exporter →";
+      }
+
+      if (n === 2) {
+        this.refreshElementList();
+        this.writeAmbientToForm();
+        if (this.editor) this.editor.ambient = this.ambient;
+        requestAnimationFrame(() => {
+          this.fitStage();
+          if (this.editor && !document.hidden) this.editor.start();
+        });
+      } else if (this.editor) {
+        this.editor.stop();
+      }
+
+      if (n === 3) this.refreshPreview();
+    }
+
+    fitStage() {
+      const wrap = document.getElementById("stageWrap");
+      const stage = document.getElementById("stage");
+      const img = document.getElementById("backgroundImage");
+      const canvas = document.getElementById("editorCanvas");
+      if (!this.image || !this.image.naturalWidth || !wrap) return;
+      const maxW = wrap.clientWidth;
+      const maxH = Math.max(240, window.innerHeight - 230);
+      if (maxW < 40) return;
+      const scale = Math.min(maxW / this.image.naturalWidth, maxH / this.image.naturalHeight);
+      const w = Math.max(2, Math.round(this.image.naturalWidth * scale));
+      const h = Math.max(2, Math.round(this.image.naturalHeight * scale));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      stage.style.width = `${w}px`;
+      stage.style.height = `${h}px`;
+      img.style.width = `${w}px`;
+      img.style.height = `${h}px`;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      const bw = Math.round(w * dpr);
+      const bh = Math.round(h * dpr);
+      if (canvas.width !== bw || canvas.height !== bh) {
+        canvas.width = bw;
+        canvas.height = bh;
+      }
+      if (this.editor) {
+        this.editor.viewWidth = w;
+        this.editor.viewHeight = h;
+        this.editor.dpr = dpr;
+        this.editor.image = this.image;
+      }
+    }
+
+    nextStep() {
+      if (this.currentStep === 1) {
+        this.analyzeDescription();
+        return;
+      }
+      if (this.currentStep === 2) {
+        if (!this.image) {
+          this.toast("Ajoutez une image avant d'exporter.", "error");
+          return;
+        }
+        this.showStep(3);
+        this.saveToLocalStorage();
+      }
+    }
+
+    prevStep() {
+      if (this.currentStep > 1) this.showStep(this.currentStep - 1);
+      this.saveToLocalStorage();
+    }
+
+    gotoStep(step) {
+      if (step === this.currentStep) return;
+      if (step < this.currentStep) {
+        this.showStep(step);
+        this.saveToLocalStorage();
+        return;
+      }
+      if (step === 2) {
+        if (!this.image) {
+          this.toast("Ajoutez une image pour ouvrir l'éditeur.", "error");
+          return;
+        }
+        this.showStep(2);
+        return;
+      }
+      if (step === 3) this.nextStep();
+    }
+
+    restart() {
+      const ok = window.confirm("Effacer le projet en cours et recommencer ?");
+      if (!ok) return;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (err) {
+        console.error(err);
+      }
+      window.location.reload();
+    }
+
+    handleKeyDown(event) {
+      const tag = document.activeElement && document.activeElement.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if ((event.key === "Delete" || event.key === "Backspace") && this.currentStep === 2 && this.editor && this.editor.selectedElement) {
+        event.preventDefault();
+        this.editor.removeElement(this.editor.selectedElement.config.id);
+        this.hidePropertyPanel();
+        this.refreshElementList();
+        this.saveToLocalStorage();
+      }
+    }
+
+    scheduleSave() {
+      window.clearTimeout(this._saveTimer);
+      this._saveTimer = window.setTimeout(() => this.saveToLocalStorage(), 600);
+    }
+
+    saveToLocalStorage() {
+      const data = {
+        currentStep: this.currentStep,
+        description: document.getElementById("description").value,
+        image: this.persistImage || this.imageDataUrl,
+        scene: this.editor ? this.editor.exportToJSON() : null,
+        ambient: this.ambient
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (err) {
+        try {
+          const slim = { ...data, image: null };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
+          this.toast("Projet mémorisé sans l'image : elle est trop lourde pour le navigateur.", "error");
+        } catch (err2) {
+          console.error(err2);
+        }
+      }
+    }
+
+    loadFromLocalStorage() {
+      let raw = null;
+      try {
+        raw = localStorage.getItem(STORAGE_KEY);
+      } catch (err) {
+        return false;
+      }
+      if (!raw) return false;
+
+      try {
+        const parsed = JSON.parse(raw);
+        this.currentStep = parsed.currentStep || 1;
+        this.description = parsed.description || "";
+        document.getElementById("description").value = this.description;
+        if (parsed.ambient) this.ambient = parsed.ambient;
+        this.writeAmbientToForm();
+
+        if (!parsed.image) {
+          this.showStep(Math.min(this.currentStep, 1));
+          return true;
+        }
+
+        this.persistImage = parsed.image;
+        this.setImage(parsed.image).then(() => {
+          if (parsed.scene && this.editor) {
+            this.editor.importFromJSON(parsed.scene);
+            this._analyzedOnce = this.editor.elements.length > 0;
+          }
+          const step = this.image ? (parsed.currentStep || 1) : 1;
+          this.showStep(step);
+          this.refreshElementList();
+        }).catch(() => {
+          this.toast("L'image sauvegardée n'a pas pu être rechargée.", "error");
+          this.showStep(1);
+        });
+        return true;
+      } catch (err) {
+        console.error("Erreur de chargement :", err);
+        return false;
+      }
+    }
+
+    setStatus(text) {
+      const line = document.getElementById("statusLine");
+      if (line) line.textContent = text || "";
+    }
+
+    toast(message, kind) {
+      const el = document.getElementById("toast");
+      el.textContent = message;
+      el.className = "toast show" + (kind ? ` ${kind}` : "");
+      window.clearTimeout(this._toastTimer);
+      this._toastTimer = window.setTimeout(() => {
+        el.className = "toast";
+      }, 3400);
+    }
+  }
+
+  function fieldsFor(config) {
+    const fields = [];
+    const push = (key, type, extra) => {
+      const range = FIELD_RANGES[key] || {};
+      fields.push({
+        key,
+        label: FIELD_LABELS[key] || key,
+        type,
+        value: valueAt(config, key),
+        min: range.min,
+        max: range.max,
+        step: range.step,
+        ...extra
+      });
+    };
+
+    if (config.region) {
+      ["region.x", "region.y", "region.width", "region.height"].forEach((key) => push(key, "range"));
+    } else if (config.position) {
+      push("position.x", "range");
+      push("position.y", "range");
+    }
+    if (config.size) {
+      push("size.width", "range");
+      push("size.height", "range");
+    }
+    ["intensity", "opacity", "radius", "particle_count", "flicker_speed", "speed", "shimmer_intensity", "count", "twinkle_speed", "wave_amplitude", "wave_frequency", "sway_amount", "sway_speed"].forEach((key) => {
+      if (config[key] != null) push(key, "range");
     });
-    setTimeout(function () {
-      if (window.animationApp) return;
-      var box = document.getElementById("bootError");
-      if (!box) return;
-      box.className = "show";
-      box.textContent = "L'application ne démarre pas. Vérifiez que text_parser.js, effects.js, editor.js, app.js et styles.css sont bien sur GitHub à côté de index.html.";
-    }, 1200);
+    if (typeof config.color === "string") push("color", "color");
+    if (Array.isArray(config.colors) && config.colors.length) push("colors.0", "color");
+    if (config.direction) {
+      push("direction", "select", {
+        options: [
+          { value: "up", label: "Vers le haut" },
+          { value: "down", label: "Vers le bas" }
+        ]
+      });
+    }
+    if (config.blend_mode) {
+      push("blend_mode", "select", {
+        options: [
+          { value: "normal", label: "Normale" },
+          { value: "screen", label: "Écran" },
+          { value: "overlay", label: "Superposition" },
+          { value: "lighter", label: "Éclaircir" },
+          { value: "multiply", label: "Produit" },
+          { value: "soft_light", label: "Lumière douce" }
+        ]
+      });
+    }
+    return fields;
+  }
+
+  function valueAt(obj, path) {
+    return path.split(".").reduce((acc, part) => (acc == null ? acc : acc[part]), obj);
+  }
+
+  function formatField(key, value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return String(value ?? "");
+    if (key.indexOf("position") === 0 || key.indexOf("size") === 0 || key.indexOf("region") === 0 || key === "radius" || key === "opacity" || key === "intensity" || key === "shimmer_intensity") {
+      return `${Math.round(n * 100)} %`;
+    }
+    if (key === "particle_count" || key === "count") return String(Math.round(n));
+    return String(Math.round(n * 100) / 100);
+  }
+
+  function iconButton(action, label, text) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.action = action;
+    btn.title = label;
+    btn.setAttribute("aria-label", label);
+    btn.textContent = text;
+    return btn;
+  }
+
+  function mixWithWhite(hex, t) {
+    const raw = String(hex || "#FFA500").replace("#", "");
+    const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
+    const n = parseInt(full, 16);
+    if (!Number.isFinite(n)) return "#FFD700";
+    const mix = (c) => Math.round(c + (255 - c) * t);
+    const h = (c) => c.toString(16).padStart(2, "0");
+    return `#${h(mix((n >> 16) & 255))}${h(mix((n >> 8) & 255))}${h(mix(n & 255))}`;
+  }
+
+  function toColorInput(hex) {
+    const raw = String(hex || "#FFA500").replace("#", "");
+    const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw.slice(0, 6);
+    return `#${full.padEnd(6, "0").slice(0, 6)}`;
+  }
+
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error("lecture"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function compressDataUrl(dataUrl, maxEdge, quality) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(2, Math.round(img.width * scale));
+        canvas.height = Math.max(2, Math.round(img.height * scale));
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
+  function boot() {
+    try {
+      if (typeof TextParser !== "function") throw new Error("TextParser manquant");
+      if (!window.LivingEffects) throw new Error("Moteur d'effets manquant");
+      if (typeof VisualEditor !== "function") throw new Error("Éditeur manquant");
+      window.animationApp = new AnimationApp();
+    } catch (err) {
+      console.error(err);
+      const box = document.getElementById("bootError");
+      if (box) {
+        box.className = "show";
+        box.textContent = "Impossible de démarrer l'application : " + (err && err.message ? err.message : err);
+      }
+    }
+  }
+
+  if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
   </script>
 </body>
 </html>
